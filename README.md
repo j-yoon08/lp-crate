@@ -7,7 +7,7 @@ LP Crate is a static browser app for searching, checking, and organizing a vinyl
 - Search albums through MusicBrainz
 - Add records by dragging search results into the collection board
 - Filter by ownership status and genre
-- Switch between board and cover wall views
+- Switch between board, cover wall, and 3D shelf views
 - Sort and reorder records
 - Refresh album metadata from MusicBrainz
 - Export/import the collection as JSON
