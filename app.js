@@ -203,7 +203,9 @@ function load() {
   if (!prefs || typeof prefs !== "object" || Array.isArray(prefs)) return;
 
   if (["all", "owned", "wishlist", "listening"].includes(prefs.filter)) state.filter = prefs.filter;
-  if (typeof prefs.genre === "string" && prefs.genre) state.genre = prefs.genre;
+  if (typeof prefs.genre === "string" && prefs.genre) {
+    state.genre = prefs.genre === "all" ? "all" : genreForCollection(prefs.genre);
+  }
   if (["manual", "artist", "year", "rating", "recent"].includes(prefs.sort)) state.sort = prefs.sort;
   if (VIEW_MODES.has(prefs.viewMode)) state.viewMode = prefs.viewMode;
 
