@@ -1143,7 +1143,7 @@ async function exportSharePng() {
       const { columns, rows } = shareGrid(displayRecords.length);
       const padding = 56;
       const top = 164;
-      const bottom = 82;
+      const bottom = 46;
       const gap = columns >= 6 ? 10 : 14;
       const availableWidth = canvas.width - padding * 2;
       const availableHeight = canvas.height - top - bottom;
@@ -1181,13 +1181,6 @@ async function exportSharePng() {
         }
       });
     }
-
-    ctx.fillStyle = "#6e6e73";
-    ctx.font = "500 22px Inter, system-ui, sans-serif";
-    ctx.fillText("j-yoon08.github.io/lp-crate", 56, 1028);
-    ctx.textAlign = "right";
-    ctx.fillText(new Date().toISOString().slice(0, 10), 1024, 1028);
-    ctx.textAlign = "start";
 
     downloadBlobObject("lp-crate-cover-wall.png", await canvasToBlob(canvas));
     setCatalogStatus("공유용 PNG를 저장했습니다.", "success");
