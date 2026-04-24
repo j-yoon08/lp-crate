@@ -979,7 +979,44 @@ function drawRoundedRect(ctx, x, y, width, height, radius) {
   ctx.closePath();
 }
 
-function drawCoverToCanvas(ctx, image, x, y, size, radius = 14) {
+function drawCanvasBrandMark(ctx, x, y, size) {
+  const center = x + size / 2;
+  const ringOuter = size * 0.32;
+  const ringInner = size * 0.13;
+
+  ctx.save();
+  drawRoundedRect(ctx, x, y, size, size, 8);
+  ctx.fillStyle = "#171719";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.16)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(center, y + size / 2, ringOuter, 0, Math.PI * 2);
+  ctx.strokeStyle = "#f8fafc";
+  ctx.lineWidth = size * 0.1;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(center, y + size / 2, ringInner, 0, Math.PI * 2);
+  ctx.fillStyle = "#f8fafc";
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(center, y + size / 2, size * 0.045, 0, Math.PI * 2);
+  ctx.fillStyle = "#171719";
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawExportBackground(ctx, width, height) {
+  const gradient = ctx.createLinearGradient(0, 0, 0, height);
+  gradient.addColorStop(0, "#fbfbfa");
+  gradient.addColorStop(0.42, "#f4f5f6");
+  gradient.addColorStop(1, "#eff1f3");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, width, height);
+}
+
+function drawCoverToCanvas(ctx, image, x, y, size, radius = 14, shadow = true) {
   const sourceRatio = image.naturalWidth / image.naturalHeight;
   let sourceWidth = image.naturalWidth;
   let sourceHeight = image.naturalHeight;
@@ -994,13 +1031,24 @@ function drawCoverToCanvas(ctx, image, x, y, size, radius = 14) {
     sourceY = (image.naturalHeight - sourceHeight) / 2;
   }
 
+  if (shadow) {
+    ctx.save();
+    ctx.shadowColor = "rgba(17, 17, 19, 0.18)";
+    ctx.shadowBlur = 18;
+    ctx.shadowOffsetY = 9;
+    drawRoundedRect(ctx, x, y, size, size, radius);
+    ctx.fillStyle = "#ffffff";
+    ctx.fill();
+    ctx.restore();
+  }
+
   ctx.save();
   drawRoundedRect(ctx, x, y, size, size, radius);
   ctx.clip();
   ctx.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, size, size);
   ctx.restore();
-  ctx.strokeStyle = "rgba(0, 0, 0, 0.14)";
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = "rgba(17, 17, 19, 0.14)";
+  ctx.lineWidth = 1.5;
   drawRoundedRect(ctx, x, y, size, size, radius);
   ctx.stroke();
 }
@@ -1059,33 +1107,44 @@ async function exportSvg() {
 
     const columns = Math.min(Number(state.columns), Math.max(records.length, 1));
     const tile = 260;
-    const infoHeight = 86;
+    const infoHeight = 90;
     const gap = 22;
-    const margin = 32;
+    const margin = 34;
     const rows = Math.max(Math.ceil(records.length / columns), 1);
     const width = margin * 2 + columns * tile + (columns - 1) * gap;
-    const height = margin * 2 + rows * (tile + infoHeight) + (rows - 1) * gap + 76;
+    const height = margin * 2 + rows * (tile + infoHeight) + (rows - 1) * gap + 92;
     const cards = records.map((record, index) => {
       const col = index % columns;
       const row = Math.floor(index / columns);
       const x = margin + col * (tile + gap);
-      const y = margin + 76 + row * (tile + infoHeight + gap);
+      const y = margin + 92 + row * (tile + infoHeight + gap);
       const cover = covers[index] || EXPORT_PLACEHOLDER_COVER;
+      const clipId = `lp-cover-${index}`;
       return `
         <g transform="translate(${x} ${y})">
-          <rect width="${tile}" height="${tile + infoHeight}" rx="8" fill="#171411" stroke="#393229"/>
-          <image href="${escapeText(cover)}" x="0" y="0" width="${tile}" height="${tile}" preserveAspectRatio="xMidYMid slice"/>
-          <text x="14" y="${tile + 30}" fill="#f7efe2" font-family="Arial, sans-serif" font-size="18" font-weight="700">${svgText(record.title, 27)}</text>
-          <text x="14" y="${tile + 56}" fill="#a9a095" font-family="Arial, sans-serif" font-size="14">${svgText(record.artist, 31)}</text>
-          <text x="14" y="${tile + 78}" fill="#d6ad59" font-family="Arial, sans-serif" font-size="12">${svgText([record.year, record.condition, statusLabel(record.status)].filter(Boolean).join(" · "), 38)}</text>
+          <clipPath id="${clipId}">
+            <rect width="${tile}" height="${tile}" rx="8"/>
+          </clipPath>
+          <g filter="url(#cardShadow)">
+            <rect width="${tile}" height="${tile + infoHeight}" rx="8" fill="#ffffff" stroke="#e1e3e6"/>
+            <image href="${escapeText(cover)}" x="0" y="0" width="${tile}" height="${tile}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${clipId})"/>
+          </g>
+          <text x="14" y="${tile + 32}" fill="#171719" font-family="Arial, sans-serif" font-size="18" font-weight="700">${svgText(record.title, 27)}</text>
+          <text x="14" y="${tile + 58}" fill="#64666b" font-family="Arial, sans-serif" font-size="14">${svgText(record.artist, 31)}</text>
+          <text x="14" y="${tile + 80}" fill="#64666b" font-family="Arial, sans-serif" font-size="12">${svgText([record.year, record.condition, statusLabel(record.status)].filter(Boolean).join(" · "), 38)}</text>
         </g>
       `;
     }).join("");
 
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
-      <rect width="100%" height="100%" fill="#11100e"/>
-      <text x="${margin}" y="${margin + 24}" fill="#d6ad59" font-family="Arial, sans-serif" font-size="14">LP Crate</text>
-      <text x="${margin}" y="${margin + 58}" fill="#f7efe2" font-family="Arial, sans-serif" font-size="34" font-weight="700">내 LP 컬렉션</text>
+      <defs>
+        <filter id="cardShadow" x="-12%" y="-12%" width="124%" height="128%">
+          <feDropShadow dx="0" dy="10" stdDeviation="13" flood-color="#111113" flood-opacity="0.12"/>
+        </filter>
+      </defs>
+      <rect width="100%" height="100%" fill="#f4f5f6"/>
+      <text x="${margin}" y="${margin + 28}" fill="#171719" font-family="Arial, sans-serif" font-size="15" font-weight="700">LP Crate</text>
+      <text x="${margin}" y="${margin + 68}" fill="#171719" font-family="Arial, sans-serif" font-size="34" font-weight="700">내 LP 컬렉션</text>
       ${cards}
     </svg>`;
     downloadBlob("lp-crate-board.svg", svg, "image/svg+xml");
@@ -1113,52 +1172,79 @@ async function exportSharePng() {
     const displayRecords = records.slice(0, 49);
     const hiddenCount = Math.max(records.length - displayRecords.length, 0);
 
-    ctx.fillStyle = "#f5f5f7";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#1d1d1f";
-    ctx.font = "700 54px Inter, system-ui, sans-serif";
-    ctx.fillText("LP Crate", 56, 86);
-    ctx.font = "500 25px Inter, system-ui, sans-serif";
-    ctx.fillStyle = "#6e6e73";
+    drawExportBackground(ctx, canvas.width, canvas.height);
+    drawCanvasBrandMark(ctx, 58, 52, 42);
+    ctx.fillStyle = "#171719";
+    ctx.font = "760 25px Inter, system-ui, sans-serif";
+    ctx.fillText("LP Crate", 112, 76);
+    ctx.font = "520 17px Inter, system-ui, sans-serif";
+    ctx.fillStyle = "#64666b";
+    ctx.fillText("Vinyl archive", 112, 101);
+    ctx.font = "760 46px Inter, system-ui, sans-serif";
+    ctx.fillStyle = "#171719";
+    ctx.fillText("내 LP 컬렉션", 58, 154);
+    ctx.font = "520 21px Inter, system-ui, sans-serif";
+    ctx.fillStyle = "#64666b";
     const filterSummary = {
       all: "All records",
       owned: "Owned",
       wishlist: "Wishlist",
       listening: "Listening"
     }[state.filter] || "Collection";
-    ctx.fillText(`${records.length} records · ${filterSummary}`, 58, 124);
+    ctx.fillText(`${records.length} records · ${filterSummary}`, 60, 188);
 
     if (!displayRecords.length) {
-      ctx.fillStyle = "#ffffff";
+      ctx.save();
+      ctx.shadowColor = "rgba(17, 17, 19, 0.12)";
+      ctx.shadowBlur = 28;
+      ctx.shadowOffsetY = 14;
       drawRoundedRect(ctx, 210, 346, 660, 260, 24);
+      ctx.fillStyle = "#ffffff";
       ctx.fill();
-      ctx.strokeStyle = "rgba(0, 0, 0, 0.1)";
+      ctx.restore();
+      ctx.strokeStyle = "rgba(17, 17, 19, 0.1)";
+      ctx.lineWidth = 1;
       ctx.stroke();
-      ctx.fillStyle = "#1d1d1f";
-      ctx.font = "700 36px Inter, system-ui, sans-serif";
+      ctx.fillStyle = "#171719";
+      ctx.font = "760 36px Inter, system-ui, sans-serif";
       ctx.textAlign = "center";
       ctx.fillText("표시할 LP가 없습니다", 540, 470);
-      ctx.font = "500 22px Inter, system-ui, sans-serif";
-      ctx.fillStyle = "#6e6e73";
+      ctx.font = "520 22px Inter, system-ui, sans-serif";
+      ctx.fillStyle = "#64666b";
       ctx.fillText("필터를 바꾸거나 LP를 추가하세요", 540, 512);
       ctx.textAlign = "start";
     } else {
       const { columns, rows } = shareGrid(displayRecords.length);
-      const padding = 56;
-      const top = 164;
-      const bottom = 46;
+      const panelX = 50;
+      const panelY = 224;
+      const panelWidth = canvas.width - panelX * 2;
+      const panelHeight = canvas.height - panelY - 50;
+      const panelPadding = columns >= 6 ? 22 : 28;
       const gap = columns >= 6 ? 10 : 14;
-      const availableWidth = canvas.width - padding * 2;
-      const availableHeight = canvas.height - top - bottom;
+      const availableWidth = panelWidth - panelPadding * 2;
+      const availableHeight = panelHeight - panelPadding * 2;
       const tile = Math.floor(Math.min(
         (availableWidth - gap * (columns - 1)) / columns,
         (availableHeight - gap * (rows - 1)) / rows
       ));
       const gridWidth = tile * columns + gap * (columns - 1);
       const gridHeight = tile * rows + gap * (rows - 1);
-      const startX = Math.floor((canvas.width - gridWidth) / 2);
-      const startY = top + Math.floor((availableHeight - gridHeight) / 2);
+      const startX = Math.floor(panelX + panelPadding + (availableWidth - gridWidth) / 2);
+      const startY = Math.floor(panelY + panelPadding + (availableHeight - gridHeight) / 2);
       const images = await Promise.all(displayRecords.map(coverImageForExport));
+
+      ctx.save();
+      ctx.shadowColor = "rgba(17, 17, 19, 0.08)";
+      ctx.shadowBlur = 28;
+      ctx.shadowOffsetY = 16;
+      drawRoundedRect(ctx, panelX, panelY, panelWidth, panelHeight, 22);
+      ctx.fillStyle = "rgba(255, 255, 255, 0.74)";
+      ctx.fill();
+      ctx.restore();
+      ctx.strokeStyle = "rgba(17, 17, 19, 0.08)";
+      ctx.lineWidth = 1;
+      drawRoundedRect(ctx, panelX, panelY, panelWidth, panelHeight, 22);
+      ctx.stroke();
 
       images.forEach((image, index) => {
         const col = index % columns;
