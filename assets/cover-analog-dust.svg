@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" role="img" aria-label="Analog Dust album cover">
+  <rect width="800" height="800" fill="#28231d"/>
+  <rect x="80" y="80" width="640" height="640" fill="#c8ad73"/>
+  <path d="M80 80h640v222c-107 39-207 38-298-3-116-53-216-40-342 38z" fill="#6b6b51"/>
+  <circle cx="400" cy="438" r="216" fill="#17130f"/>
+  <circle cx="400" cy="438" r="152" fill="none" stroke="#4b4031" stroke-width="12"/>
+  <circle cx="400" cy="438" r="66" fill="#f6efe3"/>
+  <circle cx="400" cy="438" r="18" fill="#17130f"/>
+  <g fill="#30291f" opacity="0.32">
+    <circle cx="188" cy="166" r="7"/>
+    <circle cx="602" cy="182" r="5"/>
+    <circle cx="268" cy="628" r="6"/>
+    <circle cx="638" cy="594" r="8"/>
+    <circle cx="134" cy="508" r="4"/>
+  </g>
+  <text x="118" y="170" fill="#f6efe3" font-family="Arial, sans-serif" font-size="48" font-weight="700">ANALOG DUST</text>
+</svg>

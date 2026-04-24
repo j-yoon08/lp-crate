@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" role="img" aria-label="City Pop album cover">
+  <rect width="800" height="800" fill="#f6efe3"/>
+  <rect x="0" y="472" width="800" height="328" fill="#27221f"/>
+  <rect x="98" y="280" width="110" height="520" fill="#ef715b"/>
+  <rect x="250" y="190" width="134" height="610" fill="#408872"/>
+  <rect x="426" y="120" width="92" height="680" fill="#d5a84f"/>
+  <rect x="562" y="244" width="140" height="556" fill="#355f87"/>
+  <g fill="#f6efe3" opacity="0.9">
+    <rect x="122" y="328" width="46" height="54"/>
+    <rect x="122" y="424" width="46" height="54"/>
+    <rect x="286" y="246" width="58" height="62"/>
+    <rect x="286" y="360" width="58" height="62"/>
+    <rect x="584" y="304" width="70" height="58"/>
+    <rect x="584" y="420" width="70" height="58"/>
+  </g>
+  <circle cx="610" cy="130" r="54" fill="#ef715b"/>
+  <text x="72" y="118" fill="#27221f" font-family="Arial, sans-serif" font-size="56" font-weight="700">CITY POP</text>
+</svg>

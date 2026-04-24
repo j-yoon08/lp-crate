@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" role="img" aria-label="Kraut Line album cover">
+  <rect width="800" height="800" fill="#f4efe4"/>
+  <rect x="96" y="96" width="608" height="608" fill="#151311"/>
+  <g fill="none" stroke-linecap="round" stroke-width="28">
+    <path d="M150 580C254 206 392 172 650 232" stroke="#f45d48"/>
+    <path d="M150 478c152-88 304-92 500-12" stroke="#5fa890"/>
+    <path d="M150 350c172 24 324 12 500-80" stroke="#d8b45b"/>
+    <path d="M150 646c190-30 330-15 500 44" stroke="#6d8fba"/>
+  </g>
+  <text x="124" y="168" fill="#f4efe4" font-family="Arial, sans-serif" font-size="44" font-weight="700">KRAUT LINE</text>
+</svg>

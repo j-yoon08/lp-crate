@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" role="img" aria-label="LP cover placeholder">
+  <rect width="800" height="800" fill="#201d19"/>
+  <circle cx="400" cy="400" r="292" fill="#0d0c0b"/>
+  <circle cx="400" cy="400" r="220" fill="none" stroke="#25211d" stroke-width="14"/>
+  <circle cx="400" cy="400" r="148" fill="none" stroke="#35302a" stroke-width="10"/>
+  <circle cx="400" cy="400" r="72" fill="#d6ad59"/>
+  <circle cx="400" cy="400" r="18" fill="#161310"/>
+  <text x="400" y="656" fill="#f6efe3" text-anchor="middle" font-family="Arial, sans-serif" font-size="38" font-weight="700">NO COVER</text>
+</svg>

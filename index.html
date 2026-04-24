@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>LP Crate</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="컬렉션 도구">
+        <header class="brand-bar">
+          <div>
+            <p class="eyebrow">LP Crate</p>
+            <h1>나의 바이닐</h1>
+          </div>
+        </header>
+
+        <section class="control-group" aria-labelledby="searchHeading">
+          <h2 id="searchHeading">LP 검색</h2>
+          <div class="sidebar-search">
+            <label class="field">
+              <span>앨범/아티스트</span>
+              <input id="searchInput" type="search" autocomplete="off" placeholder="예: Blonde Frank Ocean">
+            </label>
+            <button id="catalogSearchButton" type="button">검색</button>
+          </div>
+          <p class="lookup-status" id="catalogSearchStatus">MusicBrainz에서 LP를 검색합니다.</p>
+          <div class="catalog-results" id="catalogResults" aria-live="polite"></div>
+        </section>
+
+        <section class="control-group" aria-labelledby="filterHeading">
+          <h2 id="filterHeading">목록 필터</h2>
+          <label class="field">
+            <span>장르</span>
+            <select id="genreFilter"></select>
+          </label>
+          <div class="segmented" role="group" aria-label="상태 필터">
+            <button class="segment is-active" type="button" data-filter="all">전체</button>
+            <button class="segment" type="button" data-filter="owned">보유</button>
+            <button class="segment" type="button" data-filter="wishlist">위시</button>
+            <button class="segment" type="button" data-filter="listening">청취중</button>
+          </div>
+        </section>
+
+        <section class="stats-strip" aria-label="컬렉션 요약">
+          <div>
+            <strong id="ownedCount">0</strong>
+            <span>보유</span>
+          </div>
+          <div>
+            <strong id="wishCount">0</strong>
+            <span>위시</span>
+          </div>
+          <div>
+            <strong id="spinCount">0</strong>
+            <span>재생</span>
+          </div>
+        </section>
+
+        <section class="control-group">
+          <div class="section-title-row">
+            <h2>목록</h2>
+            <span id="visibleCount" class="muted-count">0장</span>
+          </div>
+          <ol class="mini-list" id="miniList"></ol>
+        </section>
+
+        <section class="control-group action-grid" aria-label="데이터 관리">
+          <button id="exportJsonButton" type="button">
+            <span aria-hidden="true">↓</span>
+            JSON
+          </button>
+          <button id="importJsonButton" type="button">
+            <span aria-hidden="true">↑</span>
+            가져오기
+          </button>
+          <button id="exportSvgButton" type="button">
+            <span aria-hidden="true">▣</span>
+            SVG
+          </button>
+          <button id="refreshRecordsButton" type="button">
+            <span aria-hidden="true">↻</span>
+            최신화
+          </button>
+          <button class="reset-button" id="resetCollectionButton" type="button">
+            <span aria-hidden="true">⌫</span>
+            초기화
+          </button>
+          <input id="importFileInput" type="file" accept=".json,application/json" hidden>
+        </section>
+      </aside>
+
+      <main class="workspace">
+        <header class="workspace-bar">
+          <div class="title-stack">
+            <p class="eyebrow">Collection board</p>
+            <h2 id="boardTitle">소장 LP 확인</h2>
+          </div>
+          <div class="toolbar" aria-label="보기 옵션">
+            <label>
+              <span>정렬</span>
+              <select id="sortSelect">
+                <option value="manual">내 순서</option>
+                <option value="artist">아티스트</option>
+                <option value="year">발매연도</option>
+                <option value="rating">평점</option>
+                <option value="recent">최근 재생</option>
+              </select>
+            </label>
+            <label>
+              <span>열</span>
+              <input id="columnRange" type="range" min="3" max="8" value="5">
+            </label>
+          </div>
+        </header>
+
+        <section class="board-wrap" id="boardWrap" aria-label="LP 격자">
+          <div class="collection-board" id="collectionBoard"></div>
+          <div class="empty-state" id="emptyState" hidden>
+            <h3>표시할 LP가 없습니다</h3>
+            <button type="button" id="emptyAddButton">LP 추가</button>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <dialog class="record-dialog" id="recordDialog">
+      <form id="recordForm" method="dialog">
+        <div class="dialog-head">
+          <div>
+            <p class="eyebrow">Record</p>
+            <h2 id="dialogTitle">LP 추가</h2>
+          </div>
+          <button class="icon-button" id="closeDialogButton" value="cancel" type="button" aria-label="닫기" title="닫기">
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
+
+        <input id="recordId" name="id" type="hidden">
+
+        <section class="lookup-panel" aria-labelledby="lookupTitle">
+          <div class="section-title-row">
+            <div>
+              <p class="eyebrow">MusicBrainz</p>
+              <h3 id="lookupTitle">실제 앨범 확인</h3>
+            </div>
+            <a id="lookupSourceLink" href="https://musicbrainz.org/" target="_blank" rel="noopener noreferrer">source</a>
+          </div>
+          <div class="lookup-row">
+            <label class="field">
+              <span>앨범/아티스트 검색</span>
+              <input id="albumLookupInput" type="search" autocomplete="off" placeholder="예: Kind of Blue Miles Davis">
+            </label>
+            <button id="albumLookupButton" type="button">검색</button>
+          </div>
+          <p class="lookup-status" id="albumLookupStatus">MusicBrainz에서 실제 앨범 후보와 표지를 확인할 수 있습니다.</p>
+          <div class="album-results" id="albumResults" aria-live="polite"></div>
+        </section>
+
+        <div class="form-grid">
+          <label class="field">
+            <span>앨범</span>
+            <input id="titleInput" name="title" required>
+          </label>
+          <label class="field">
+            <span>아티스트</span>
+            <input id="artistInput" name="artist" required>
+          </label>
+          <label class="field">
+            <span>발매연도</span>
+            <input id="yearInput" name="year" inputmode="numeric" pattern="[0-9]{0,4}">
+          </label>
+          <label class="field">
+            <span>장르</span>
+            <input id="genreInput" name="genre">
+          </label>
+          <label class="field">
+            <span>상태</span>
+            <select id="statusInput" name="status">
+              <option value="owned">보유</option>
+              <option value="wishlist">위시</option>
+              <option value="listening">청취중</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>컨디션</span>
+            <select id="conditionInput" name="condition">
+              <option value="M">M</option>
+              <option value="NM">NM</option>
+              <option value="EX">EX</option>
+              <option value="VG+">VG+</option>
+              <option value="VG">VG</option>
+              <option value="G">G</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>프레싱</span>
+            <input id="pressingInput" name="pressing" placeholder="KR 1st, Japan OBI">
+          </label>
+          <label class="field">
+            <span>평점</span>
+            <input id="ratingInput" name="rating" type="number" min="0" max="5" step="0.5">
+          </label>
+          <label class="field">
+            <span>태그</span>
+            <input id="tagsInput" name="tags" placeholder="jazz, mono, sealed">
+          </label>
+          <label class="field">
+            <span>표지 URL</span>
+            <input id="coverInput" name="cover" type="url" placeholder="https://">
+          </label>
+          <label class="field file-field">
+            <span>표지 파일</span>
+            <input id="coverFileInput" type="file" accept="image/*">
+          </label>
+          <label class="field">
+            <span>재생 횟수</span>
+            <input id="spinInput" name="spinCount" type="number" min="0" step="1">
+          </label>
+        </div>
+
+        <label class="field notes-field">
+          <span>메모</span>
+          <textarea id="notesInput" name="notes" rows="3"></textarea>
+        </label>
+
+        <div class="dialog-actions">
+          <button class="danger-button" id="deleteRecordButton" type="button">삭제</button>
+          <div>
+            <button id="cancelDialogButton" type="button">취소</button>
+            <button class="primary-button" id="saveRecordButton" type="submit">저장</button>
+          </div>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="./app.js" defer></script>
+  </body>
+</html>
