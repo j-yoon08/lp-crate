@@ -9,6 +9,7 @@ const CATALOG_SEARCH_LIMIT = 50;
 const DIALOG_SEARCH_LIMIT = 24;
 const COVER_UPLOAD_LIMIT_BYTES = 900_000;
 const STORAGE_BACKUP_PREFIX = "lp-crate.recovered";
+const VIEW_MODES = new Set(["board", "wall"]);
 const EXPORT_PLACEHOLDER_COVER = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500">
     <rect width="500" height="500" fill="#ececef"/>
@@ -128,7 +129,7 @@ function load() {
   if (["all", "owned", "wishlist", "listening"].includes(prefs.filter)) state.filter = prefs.filter;
   if (typeof prefs.genre === "string" && prefs.genre) state.genre = prefs.genre;
   if (["manual", "artist", "year", "rating", "recent"].includes(prefs.sort)) state.sort = prefs.sort;
-  if (["board", "wall", "shelf"].includes(prefs.viewMode)) state.viewMode = prefs.viewMode;
+  if (VIEW_MODES.has(prefs.viewMode)) state.viewMode = prefs.viewMode;
 
   const columns = Number(prefs.columns);
   if (Number.isFinite(columns)) state.columns = Math.min(8, Math.max(3, columns));
@@ -201,7 +202,7 @@ function restoreCollectionState(snapshot) {
   state.genre = snapshot.genre;
   state.sort = snapshot.sort;
   state.columns = snapshot.columns;
-  state.viewMode = snapshot.viewMode;
+  state.viewMode = VIEW_MODES.has(snapshot.viewMode) ? snapshot.viewMode : "board";
 }
 
 function commitCollectionChange(mutator, failureMessage) {
@@ -1255,7 +1256,7 @@ function bindEvents() {
 
   els.viewModeButtons.forEach(button => {
     button.addEventListener("click", () => {
-      state.viewMode = button.dataset.viewMode;
+      state.viewMode = VIEW_MODES.has(button.dataset.viewMode) ? button.dataset.viewMode : "board";
       render();
     });
   });
