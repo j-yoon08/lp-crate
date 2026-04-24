@@ -593,12 +593,8 @@ function renderBoard(records) {
   els.board.style.setProperty("--columns", state.columns);
   els.board.dataset.viewMode = state.viewMode;
   els.boardWrap.dataset.viewMode = state.viewMode;
-  const center = (records.length - 1) / 2;
-  els.board.innerHTML = records.map((record, index) => {
-    const offset = index - center;
-    const depth = Math.max(0, 8 - Math.abs(offset));
-    return `
-    <article class="record-card" draggable="true" data-record-id="${escapeText(record.id)}" style="--offset: ${offset.toFixed(2)}; --depth: ${depth.toFixed(2)}; z-index: ${Math.round(depth * 10)};">
+  els.board.innerHTML = records.map(record => `
+    <article class="record-card" draggable="true" data-record-id="${escapeText(record.id)}">
       <img class="record-cover" src="${escapeText(record.cover || PLACEHOLDER_COVER)}" alt="${escapeText(record.title)} 표지" onerror="this.onerror=null;this.src='${PLACEHOLDER_COVER}'">
       <div class="card-actions">
         <button type="button" data-spin-id="${escapeText(record.id)}" aria-label="재생 횟수 추가" title="재생 횟수 추가">+</button>
@@ -620,8 +616,7 @@ function renderBoard(records) {
         </div>
       </div>
     </article>
-    `;
-  }).join("");
+  `).join("");
 
   els.emptyState.hidden = records.length > 0;
 }
