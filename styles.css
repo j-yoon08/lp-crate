@@ -455,6 +455,33 @@ h2 {
   flex-wrap: wrap;
 }
 
+.view-switch {
+  min-height: 38px;
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(72px, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+}
+
+.view-switch button {
+  min-height: 28px;
+  padding: 0 10px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.view-switch button.is-active {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--line);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+}
+
 .toolbar label {
   min-width: 128px;
   display: grid;
@@ -489,6 +516,11 @@ h2 {
   align-items: start;
 }
 
+.collection-board[data-view-mode="wall"] {
+  grid-template-columns: repeat(var(--columns), minmax(96px, 1fr));
+  gap: 10px;
+}
+
 .record-card {
   position: relative;
   min-width: 0;
@@ -512,6 +544,17 @@ h2 {
   opacity: 0.45;
 }
 
+.collection-board[data-view-mode="wall"] .record-card {
+  display: block;
+  aspect-ratio: 1;
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+.collection-board[data-view-mode="wall"] .record-card:hover {
+  transform: translateY(-1px) scale(1.01);
+}
+
 .record-cover {
   width: 100%;
   aspect-ratio: 1;
@@ -520,12 +563,38 @@ h2 {
   background: #ececef;
 }
 
+.collection-board[data-view-mode="wall"] .record-cover {
+  height: 100%;
+  aspect-ratio: auto;
+}
+
 .record-body {
   min-height: 0;
   display: grid;
   grid-template-rows: 18px 44px 20px 46px;
   gap: 6px;
   padding: 11px;
+}
+
+.collection-board[data-view-mode="wall"] .record-body {
+  position: absolute;
+  inset: auto 0 0;
+  min-height: 54px;
+  display: block;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.64);
+  transform: translateY(calc(100% - 4px));
+  transition: transform 160ms ease;
+}
+
+.collection-board[data-view-mode="wall"] .record-card:hover .record-body,
+.collection-board[data-view-mode="wall"] .record-card:focus-within .record-body {
+  transform: translateY(0);
+}
+
+.collection-board[data-view-mode="wall"] .record-kicker,
+.collection-board[data-view-mode="wall"] .record-meta {
+  display: none;
 }
 
 .record-kicker {
@@ -559,6 +628,17 @@ h2 {
   -webkit-line-clamp: 2;
 }
 
+.collection-board[data-view-mode="wall"] .record-title {
+  min-height: 0;
+  display: block;
+  margin-bottom: 3px;
+  color: #ffffff;
+  font-size: 0.82rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .record-artist {
   min-width: 0;
   overflow: hidden;
@@ -567,6 +647,12 @@ h2 {
   line-height: 1.3;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.collection-board[data-view-mode="wall"] .record-artist {
+  display: block;
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 0.72rem;
 }
 
 .record-meta {

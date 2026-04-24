@@ -79,6 +79,10 @@
             <span aria-hidden="true">▣</span>
             SVG
           </button>
+          <button id="exportPngButton" type="button">
+            <span aria-hidden="true">□</span>
+            PNG
+          </button>
           <button id="refreshRecordsButton" type="button">
             <span aria-hidden="true">↻</span>
             최신화
@@ -98,6 +102,10 @@
             <h2 id="boardTitle">소장 LP 확인</h2>
           </div>
           <div class="toolbar" aria-label="보기 옵션">
+            <div class="view-switch" role="group" aria-label="보기 방식">
+              <button class="is-active" type="button" data-view-mode="board">보드</button>
+              <button type="button" data-view-mode="wall">커버월</button>
+            </div>
             <label>
               <span>정렬</span>
               <select id="sortSelect">

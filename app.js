@@ -24,6 +24,7 @@ const state = {
   genre: "all",
   sort: "manual",
   columns: 5,
+  viewMode: "board",
   dragId: null,
   dragCatalogResultId: null,
   coverDraft: "",
@@ -51,11 +52,13 @@ const els = {
   genreFilter: document.querySelector("#genreFilter"),
   sortSelect: document.querySelector("#sortSelect"),
   columnRange: document.querySelector("#columnRange"),
+  viewModeButtons: [...document.querySelectorAll("[data-view-mode]")],
   segments: [...document.querySelectorAll("[data-filter]")],
   emptyAddButton: document.querySelector("#emptyAddButton"),
   exportJsonButton: document.querySelector("#exportJsonButton"),
   importJsonButton: document.querySelector("#importJsonButton"),
   exportSvgButton: document.querySelector("#exportSvgButton"),
+  exportPngButton: document.querySelector("#exportPngButton"),
   refreshRecordsButton: document.querySelector("#refreshRecordsButton"),
   resetCollectionButton: document.querySelector("#resetCollectionButton"),
   importFileInput: document.querySelector("#importFileInput"),
@@ -125,6 +128,7 @@ function load() {
   if (["all", "owned", "wishlist", "listening"].includes(prefs.filter)) state.filter = prefs.filter;
   if (typeof prefs.genre === "string" && prefs.genre) state.genre = prefs.genre;
   if (["manual", "artist", "year", "rating", "recent"].includes(prefs.sort)) state.sort = prefs.sort;
+  if (["board", "wall"].includes(prefs.viewMode)) state.viewMode = prefs.viewMode;
 
   const columns = Number(prefs.columns);
   if (Number.isFinite(columns)) state.columns = Math.min(8, Math.max(3, columns));
@@ -141,7 +145,8 @@ function save() {
       filter: state.filter,
       genre: state.genre,
       sort: state.sort,
-      columns: state.columns
+      columns: state.columns,
+      viewMode: state.viewMode
     }));
     return true;
   } catch (error) {
@@ -185,7 +190,8 @@ function snapshotCollectionState() {
     filter: state.filter,
     genre: state.genre,
     sort: state.sort,
-    columns: state.columns
+    columns: state.columns,
+    viewMode: state.viewMode
   };
 }
 
@@ -195,6 +201,7 @@ function restoreCollectionState(snapshot) {
   state.genre = snapshot.genre;
   state.sort = snapshot.sort;
   state.columns = snapshot.columns;
+  state.viewMode = snapshot.viewMode;
 }
 
 function commitCollectionChange(mutator, failureMessage) {
@@ -584,6 +591,8 @@ function renderMiniList(records) {
 
 function renderBoard(records) {
   els.board.style.setProperty("--columns", state.columns);
+  els.board.dataset.viewMode = state.viewMode;
+  els.boardWrap.dataset.viewMode = state.viewMode;
   els.board.innerHTML = records.map(record => `
     <article class="record-card" draggable="true" data-record-id="${escapeText(record.id)}">
       <img class="record-cover" src="${escapeText(record.cover || PLACEHOLDER_COVER)}" alt="${escapeText(record.title)} 표지" onerror="this.onerror=null;this.src='${PLACEHOLDER_COVER}'">
@@ -622,6 +631,11 @@ function render() {
   els.sortSelect.value = state.sort;
   els.columnRange.value = state.columns;
   els.segments.forEach(button => button.classList.toggle("is-active", button.dataset.filter === state.filter));
+  els.viewModeButtons.forEach(button => {
+    const active = button.dataset.viewMode === state.viewMode;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
   return save();
 }
 
@@ -727,6 +741,10 @@ function moveRecord(sourceId, targetId) {
 
 function downloadBlob(filename, content, type) {
   const blob = new Blob([content], { type });
+  downloadBlobObject(filename, blob);
+}
+
+function downloadBlobObject(filename, blob) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -924,12 +942,81 @@ function blobToDataUrl(blob) {
   });
 }
 
+function canvasToBlob(canvas, type = "image/png", quality = 0.92) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(blob => {
+      if (blob) resolve(blob);
+      else reject(new Error("이미지를 만들 수 없습니다."));
+    }, type, quality);
+  });
+}
+
+function loadExportImage(src) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.decoding = "async";
+    image.addEventListener("load", () => resolve(image), { once: true });
+    image.addEventListener("error", () => reject(new Error("표지를 불러올 수 없습니다.")), { once: true });
+    image.src = src;
+  });
+}
+
+function drawRoundedRect(ctx, x, y, width, height, radius) {
+  const corner = Math.min(radius, width / 2, height / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + corner, y);
+  ctx.lineTo(x + width - corner, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + corner);
+  ctx.lineTo(x + width, y + height - corner);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - corner, y + height);
+  ctx.lineTo(x + corner, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - corner);
+  ctx.lineTo(x, y + corner);
+  ctx.quadraticCurveTo(x, y, x + corner, y);
+  ctx.closePath();
+}
+
+function drawCoverToCanvas(ctx, image, x, y, size, radius = 14) {
+  const sourceRatio = image.naturalWidth / image.naturalHeight;
+  let sourceWidth = image.naturalWidth;
+  let sourceHeight = image.naturalHeight;
+  let sourceX = 0;
+  let sourceY = 0;
+
+  if (sourceRatio > 1) {
+    sourceWidth = image.naturalHeight;
+    sourceX = (image.naturalWidth - sourceWidth) / 2;
+  } else if (sourceRatio < 1) {
+    sourceHeight = image.naturalWidth;
+    sourceY = (image.naturalHeight - sourceHeight) / 2;
+  }
+
+  ctx.save();
+  drawRoundedRect(ctx, x, y, size, size, radius);
+  ctx.clip();
+  ctx.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, size, size);
+  ctx.restore();
+  ctx.strokeStyle = "rgba(0, 0, 0, 0.14)";
+  ctx.lineWidth = 2;
+  drawRoundedRect(ctx, x, y, size, size, radius);
+  ctx.stroke();
+}
+
+function shareGrid(recordsLength) {
+  const count = Math.max(recordsLength, 1);
+  const columns = count <= 4 ? 2 : count <= 9 ? 3 : count <= 16 ? 4 : count <= 25 ? 5 : count <= 36 ? 6 : 7;
+  return {
+    columns,
+    rows: Math.ceil(Math.min(count, 49) / columns)
+  };
+}
+
 async function coverToExportHref(cover) {
   const source = cover || PLACEHOLDER_COVER;
   if (source.startsWith("data:image/")) return source;
-  if (source === PLACEHOLDER_COVER || source.startsWith("./assets/")) return EXPORT_PLACEHOLDER_COVER;
+  if (source === PLACEHOLDER_COVER) return EXPORT_PLACEHOLDER_COVER;
 
-  if (/^https?:\/\//i.test(source)) {
+  if (/^https?:\/\//i.test(source) || source.startsWith("./assets/")) {
     const response = await fetch(source);
     if (!response.ok) throw new Error(`cover ${response.status}`);
     const blob = await response.blob();
@@ -938,6 +1025,15 @@ async function coverToExportHref(cover) {
   }
 
   return EXPORT_PLACEHOLDER_COVER;
+}
+
+async function coverImageForExport(record) {
+  try {
+    return await loadExportImage(await coverToExportHref(record.cover));
+  } catch (error) {
+    console.warn("공유 이미지 표지 로드에 실패했습니다.", record.title, error);
+    return loadExportImage(EXPORT_PLACEHOLDER_COVER);
+  }
 }
 
 async function exportSvg() {
@@ -1000,6 +1096,110 @@ async function exportSvg() {
   }
 }
 
+async function exportSharePng() {
+  const records = filteredRecords();
+  const buttonLabel = els.exportPngButton.innerHTML;
+  els.exportPngButton.disabled = true;
+  els.exportPngButton.innerHTML = `<span aria-hidden="true">...</span> PNG`;
+
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1080;
+    canvas.height = 1080;
+    const ctx = canvas.getContext("2d");
+    const displayRecords = records.slice(0, 49);
+    const hiddenCount = Math.max(records.length - displayRecords.length, 0);
+
+    ctx.fillStyle = "#f5f5f7";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#1d1d1f";
+    ctx.font = "700 54px Inter, system-ui, sans-serif";
+    ctx.fillText("LP Crate", 56, 86);
+    ctx.font = "500 25px Inter, system-ui, sans-serif";
+    ctx.fillStyle = "#6e6e73";
+    const filterSummary = {
+      all: "All records",
+      owned: "Owned",
+      wishlist: "Wishlist",
+      listening: "Listening"
+    }[state.filter] || "Collection";
+    ctx.fillText(`${records.length} records · ${filterSummary}`, 58, 124);
+
+    if (!displayRecords.length) {
+      ctx.fillStyle = "#ffffff";
+      drawRoundedRect(ctx, 210, 346, 660, 260, 24);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(0, 0, 0, 0.1)";
+      ctx.stroke();
+      ctx.fillStyle = "#1d1d1f";
+      ctx.font = "700 36px Inter, system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("표시할 LP가 없습니다", 540, 470);
+      ctx.font = "500 22px Inter, system-ui, sans-serif";
+      ctx.fillStyle = "#6e6e73";
+      ctx.fillText("필터를 바꾸거나 LP를 추가하세요", 540, 512);
+      ctx.textAlign = "start";
+    } else {
+      const { columns, rows } = shareGrid(displayRecords.length);
+      const padding = 56;
+      const top = 164;
+      const bottom = 82;
+      const gap = columns >= 6 ? 10 : 14;
+      const availableWidth = canvas.width - padding * 2;
+      const availableHeight = canvas.height - top - bottom;
+      const tile = Math.floor(Math.min(
+        (availableWidth - gap * (columns - 1)) / columns,
+        (availableHeight - gap * (rows - 1)) / rows
+      ));
+      const gridWidth = tile * columns + gap * (columns - 1);
+      const gridHeight = tile * rows + gap * (rows - 1);
+      const startX = Math.floor((canvas.width - gridWidth) / 2);
+      const startY = top + Math.floor((availableHeight - gridHeight) / 2);
+      const images = await Promise.all(displayRecords.map(coverImageForExport));
+
+      images.forEach((image, index) => {
+        const col = index % columns;
+        const row = Math.floor(index / columns);
+        const x = startX + col * (tile + gap);
+        const y = startY + row * (tile + gap);
+        drawCoverToCanvas(ctx, image, x, y, tile, columns >= 6 ? 10 : 14);
+
+        if (hiddenCount && index === images.length - 1) {
+          ctx.save();
+          drawRoundedRect(ctx, x, y, tile, tile, columns >= 6 ? 10 : 14);
+          ctx.clip();
+          ctx.fillStyle = "rgba(0, 0, 0, 0.58)";
+          ctx.fillRect(x, y, tile, tile);
+          ctx.restore();
+          ctx.fillStyle = "#ffffff";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.font = `700 ${Math.max(28, Math.floor(tile * 0.24))}px Inter, system-ui, sans-serif`;
+          ctx.fillText(`+${hiddenCount}`, x + tile / 2, y + tile / 2);
+          ctx.textAlign = "start";
+          ctx.textBaseline = "alphabetic";
+        }
+      });
+    }
+
+    ctx.fillStyle = "#6e6e73";
+    ctx.font = "500 22px Inter, system-ui, sans-serif";
+    ctx.fillText("j-yoon08.github.io/lp-crate", 56, 1028);
+    ctx.textAlign = "right";
+    ctx.fillText(new Date().toISOString().slice(0, 10), 1024, 1028);
+    ctx.textAlign = "start";
+
+    downloadBlobObject("lp-crate-cover-wall.png", await canvasToBlob(canvas));
+    setCatalogStatus("공유용 PNG를 저장했습니다.", "success");
+  } catch (error) {
+    console.error("PNG 내보내기에 실패했습니다.", error);
+    setCatalogStatus(`PNG 내보내기에 실패했습니다: ${error.message}`, "warning");
+  } finally {
+    els.exportPngButton.disabled = false;
+    els.exportPngButton.innerHTML = buttonLabel;
+  }
+}
+
 function bindEvents() {
   els.emptyAddButton.addEventListener("click", () => openDialog());
   els.closeDialogButton.addEventListener("click", closeDialog);
@@ -1058,6 +1258,13 @@ function bindEvents() {
   els.columnRange.addEventListener("input", event => {
     state.columns = Number(event.target.value);
     render();
+  });
+
+  els.viewModeButtons.forEach(button => {
+    button.addEventListener("click", () => {
+      state.viewMode = button.dataset.viewMode;
+      render();
+    });
   });
 
   els.segments.forEach(button => {
@@ -1142,6 +1349,7 @@ function bindEvents() {
   els.exportJsonButton.addEventListener("click", exportJson);
   els.importJsonButton.addEventListener("click", () => els.importFileInput.click());
   els.exportSvgButton.addEventListener("click", exportSvg);
+  els.exportPngButton.addEventListener("click", exportSharePng);
   els.refreshRecordsButton.addEventListener("click", refreshRecords);
   els.resetCollectionButton.addEventListener("click", resetCollection);
   els.importFileInput.addEventListener("change", event => {
