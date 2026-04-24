@@ -1358,9 +1358,6 @@ async function exportSharePng() {
     ctx.font = "520 17px Inter, system-ui, sans-serif";
     ctx.fillStyle = "#64666b";
     ctx.fillText("Vinyl archive", 112, 101);
-    ctx.font = "760 46px Inter, system-ui, sans-serif";
-    ctx.fillStyle = "#171719";
-    ctx.fillText("내 LP 컬렉션", 58, 154);
     ctx.font = "520 21px Inter, system-ui, sans-serif";
     ctx.fillStyle = "#64666b";
     const filterSummary = {
@@ -1369,7 +1366,7 @@ async function exportSharePng() {
       wishlist: "Wishlist",
       listening: "Listening"
     }[state.filter] || "Collection";
-    ctx.fillText(`${records.length} records · ${filterSummary}`, 60, 188);
+    ctx.fillText(`${records.length} records · ${filterSummary}`, 60, 148);
 
     if (!displayRecords.length) {
       ctx.save();
@@ -1394,7 +1391,7 @@ async function exportSharePng() {
     } else {
       const { columns, rows } = shareGrid(displayRecords.length);
       const panelX = 50;
-      const panelY = 224;
+      const panelY = 184;
       const panelWidth = canvas.width - panelX * 2;
       const panelHeight = canvas.height - panelY - 50;
       const panelPadding = columns >= 6 ? 22 : 28;
