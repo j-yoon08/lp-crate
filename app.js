@@ -258,11 +258,13 @@ function musicBrainzUrl(id) {
 function setLookupStatus(message, tone = "muted") {
   els.albumLookupStatus.textContent = message;
   els.albumLookupStatus.dataset.tone = tone;
+  els.albumLookupStatus.hidden = !message;
 }
 
 function setCatalogStatus(message, tone = "muted") {
   els.catalogSearchStatus.textContent = message;
   els.catalogSearchStatus.dataset.tone = tone;
+  els.catalogSearchStatus.hidden = !message;
 }
 
 function lookupSearchText() {
@@ -303,21 +305,21 @@ async function fetchMusicBrainzJson(url, { signal, retries = 2 } = {}) {
 
     if (response.ok) return response.json();
     if (!MUSICBRAINZ_RETRY_STATUSES.has(response.status) || attempt === retries) {
-      throw new Error(`MusicBrainz ${response.status}`);
+      throw new Error(`검색 서비스 오류 ${response.status}`);
     }
 
     await sleep(retryDelay(response, attempt));
   }
 
   if (lastError) throw lastError;
-  throw new Error("MusicBrainz 응답을 받을 수 없습니다.");
+  throw new Error("검색 서비스 응답을 받을 수 없습니다.");
 }
 
 function renderAlbumResults() {
   els.albumResults.innerHTML = state.albumResults.map(result => {
     const year = (result["first-release-date"] || "").slice(0, 4) || "연도 미상";
     const artist = artistCreditName(result) || "아티스트 미상";
-    const source = result.score ? `Match ${result.score}` : "MusicBrainz";
+    const source = result.score ? `일치도 ${result.score}` : "검색 결과";
     return `
       <button class="album-result" type="button" data-album-result-id="${escapeText(result.id)}">
         <img src="${escapeText(lookupResultCover(result))}" alt="${escapeText(result.title)} 표지" loading="lazy" onerror="this.onerror=null;this.src='${PLACEHOLDER_COVER}'">
@@ -352,7 +354,7 @@ function renderCatalogResults() {
         <span>
           <strong>${escapeText(result.title)}</strong>
           <span>${escapeText(artist)}</span>
-          <span>${escapeText(year)} · ${pending ? "추가 중" : "MusicBrainz"}</span>
+          <span>${escapeText(year)} · ${pending ? "추가 중" : "검색 결과"}</span>
         </span>
         <button type="button" data-add-catalog-id="${escapeText(result.id)}" aria-label="${escapeText(result.title)} 추가" title="추가" ${locked ? "disabled" : ""}>${pending ? "..." : "+"}</button>
       </article>
@@ -382,13 +384,13 @@ async function searchAlbums() {
   state.albumLookupController = new AbortController();
   state.albumResults = [];
   renderAlbumResults();
-  setLookupStatus("MusicBrainz에서 검색 중입니다...");
+  setLookupStatus("검색 중...");
 
   try {
     state.albumResults = (await fetchAlbumCandidates(query, DIALOG_SEARCH_LIMIT, state.albumLookupController.signal)).slice(0, DIALOG_SEARCH_LIMIT);
     renderAlbumResults();
     setLookupStatus(
-      state.albumResults.length ? `MusicBrainz ${state.albumResults.length}개 후보를 찾았습니다. 표지를 보고 맞는 앨범을 선택하세요.` : "검색 결과가 없습니다.",
+      state.albumResults.length ? `${state.albumResults.length}개 후보를 찾았습니다.` : "검색 결과가 없습니다.",
       state.albumResults.length ? "success" : "warning"
     );
   } catch (error) {
@@ -411,7 +413,7 @@ async function searchCatalog() {
   state.catalogSearchController = new AbortController();
   state.catalogResults = [];
   renderCatalogResults();
-  setCatalogStatus("MusicBrainz에서 검색 중입니다...");
+  setCatalogStatus("검색 중...");
 
   try {
     state.catalogResults = (await fetchAlbumCandidates(query, CATALOG_SEARCH_LIMIT, state.catalogSearchController.signal)).slice(0, CATALOG_SEARCH_LIMIT);
@@ -648,7 +650,7 @@ function openDialog(record = null) {
   els.coverFileInput.value = "";
   els.albumLookupInput.value = record ? [record.title, record.artist].filter(Boolean).join(" ") : "";
   els.lookupSourceLink.href = "https://musicbrainz.org/";
-  setLookupStatus("MusicBrainz에서 실제 앨범 후보와 표지를 확인할 수 있습니다.");
+  setLookupStatus("");
   els.recordId.value = record?.id || "";
   els.dialogTitle.textContent = record ? "LP 수정" : "LP 추가";
   els.titleInput.value = record?.title || "";
@@ -895,7 +897,7 @@ async function refreshRecords() {
     unmatchedCount ? `${unmatchedCount}개 미매칭` : "",
     failedCount ? `${failedCount}개 일시 실패` : ""
   ].filter(Boolean).join(", ");
-  alert(`최신화 완료: ${summary}${failedCount ? "\\nMusicBrainz가 불안정하면 잠시 후 다시 눌러 주세요." : ""}`);
+  alert(`최신화 완료: ${summary}${failedCount ? "\\n검색 서비스가 불안정하면 잠시 후 다시 눌러 주세요." : ""}`);
 }
 
 function resetCollection() {
@@ -922,7 +924,7 @@ function resetCollection() {
   state.catalogSearchController?.abort();
   els.searchInput.value = "";
   renderCatalogResults();
-  setCatalogStatus("MusicBrainz에서 LP를 검색합니다.");
+  setCatalogStatus("");
   localStorage.removeItem(STORAGE_KEY);
   localStorage.removeItem(PREFS_KEY);
   render();
@@ -1083,7 +1085,7 @@ async function exportSvg() {
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
       <rect width="100%" height="100%" fill="#11100e"/>
       <text x="${margin}" y="${margin + 24}" fill="#d6ad59" font-family="Arial, sans-serif" font-size="14">LP Crate</text>
-      <text x="${margin}" y="${margin + 58}" fill="#f7efe2" font-family="Arial, sans-serif" font-size="34" font-weight="700">소장 LP 확인</text>
+      <text x="${margin}" y="${margin + 58}" fill="#f7efe2" font-family="Arial, sans-serif" font-size="34" font-weight="700">내 LP 컬렉션</text>
       ${cards}
     </svg>`;
     downloadBlob("lp-crate-board.svg", svg, "image/svg+xml");
