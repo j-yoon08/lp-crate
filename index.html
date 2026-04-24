@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>LP Crate</title>
-    <link rel="stylesheet" href="./styles.css?v=20260425-export">
+    <link rel="stylesheet" href="./styles.css?v=20260425-genre">
   </head>
   <body>
     <div class="app-shell">
@@ -179,7 +179,8 @@
           </label>
           <label class="field">
             <span>장르</span>
-            <input id="genreInput" name="genre">
+            <select id="genreInput" name="genre"></select>
+            <input id="genreCustomInput" name="genreCustom" placeholder="직접 입력" hidden disabled>
           </label>
           <label class="field">
             <span>상태</span>
@@ -241,6 +242,6 @@
       </form>
     </dialog>
 
-    <script src="./app.js?v=20260425-export" defer></script>
+    <script src="./app.js?v=20260425-genre" defer></script>
   </body>
 </html>

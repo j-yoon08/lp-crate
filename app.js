@@ -10,6 +10,81 @@ const DIALOG_SEARCH_LIMIT = 24;
 const COVER_UPLOAD_LIMIT_BYTES = 900_000;
 const STORAGE_BACKUP_PREFIX = "lp-crate.recovered";
 const VIEW_MODES = new Set(["board", "wall"]);
+const CUSTOM_GENRE_VALUE = "__custom_genre__";
+const GENRE_CATEGORIES = [
+  {
+    label: "팝 / 인디",
+    genres: ["Pop", "K-Pop", "J-Pop", "City Pop", "Indie Pop", "Dream Pop", "Synthpop", "Singer-Songwriter"]
+  },
+  {
+    label: "록 / 얼터너티브",
+    genres: ["Rock", "J-Rock", "Alternative", "Indie Rock", "Psychedelic Rock", "Post-Rock", "Punk", "Metal", "Folk Rock"]
+  },
+  {
+    label: "R&B / 힙합",
+    genres: ["R&B", "Soul", "Neo Soul", "Funk", "Hip-Hop", "Rap", "Trap"]
+  },
+  {
+    label: "재즈 / 클래식",
+    genres: ["Jazz", "Vocal Jazz", "Bebop", "Fusion", "Classical", "Modern Classical", "Opera"]
+  },
+  {
+    label: "일렉트로닉 / 댄스",
+    genres: ["Electronic", "Ambient", "House", "Techno", "Disco", "Dance", "Downtempo"]
+  },
+  {
+    label: "월드 / 사운드",
+    genres: ["Folk", "World", "Reggae", "Latin", "Blues", "Country", "Soundtrack", "Experimental"]
+  }
+];
+const GENRE_PRESETS = GENRE_CATEGORIES.flatMap(category => category.genres);
+const GENRE_PRESET_SET = new Set(GENRE_PRESETS);
+const GENRE_ALIASES = new Map([
+  ["art pop", "Pop"],
+  ["pop rock", "Pop"],
+  ["k pop", "K-Pop"],
+  ["k-pop", "K-Pop"],
+  ["j pop", "J-Pop"],
+  ["j-pop", "J-Pop"],
+  ["j rock", "J-Rock"],
+  ["j-rock", "J-Rock"],
+  ["city pop", "City Pop"],
+  ["indie pop", "Indie Pop"],
+  ["dream pop", "Dream Pop"],
+  ["synth pop", "Synthpop"],
+  ["synth-pop", "Synthpop"],
+  ["synthpop", "Synthpop"],
+  ["alternative rock", "Alternative"],
+  ["alt rock", "Alternative"],
+  ["indie rock", "Indie Rock"],
+  ["psychedelic rock", "Psychedelic Rock"],
+  ["post rock", "Post-Rock"],
+  ["post-rock", "Post-Rock"],
+  ["punk rock", "Punk"],
+  ["heavy metal", "Metal"],
+  ["folk rock", "Folk Rock"],
+  ["rhythm and blues", "R&B"],
+  ["rnb", "R&B"],
+  ["r&b", "R&B"],
+  ["neo soul", "Neo Soul"],
+  ["neo-soul", "Neo Soul"],
+  ["hip hop", "Hip-Hop"],
+  ["hip-hop", "Hip-Hop"],
+  ["vocal jazz", "Vocal Jazz"],
+  ["hard bop", "Bebop"],
+  ["jazz fusion", "Fusion"],
+  ["modern classical", "Modern Classical"],
+  ["electronica", "Electronic"],
+  ["electropop", "Electronic"],
+  ["deep house", "House"],
+  ["nu disco", "Disco"],
+  ["nu-disco", "Disco"],
+  ["trip hop", "Downtempo"],
+  ["trip-hop", "Downtempo"],
+  ["soundtracks", "Soundtrack"],
+  ["film score", "Soundtrack"],
+  ["experimental music", "Experimental"]
+]);
 const EXPORT_PLACEHOLDER_COVER = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500">
     <rect width="500" height="500" fill="#ececef"/>
@@ -74,6 +149,7 @@ const els = {
   artistInput: document.querySelector("#artistInput"),
   yearInput: document.querySelector("#yearInput"),
   genreInput: document.querySelector("#genreInput"),
+  genreCustomInput: document.querySelector("#genreCustomInput"),
   statusInput: document.querySelector("#statusInput"),
   conditionInput: document.querySelector("#conditionInput"),
   pressingInput: document.querySelector("#pressingInput"),
@@ -163,7 +239,7 @@ function normalizeRecord(record) {
     title: String(record.title || "").trim(),
     artist: String(record.artist || "").trim(),
     year: String(record.year || "").trim(),
-    genre: String(record.genre || "").trim(),
+    genre: genreForCollection(record.genre),
     status: record.status || "owned",
     condition: record.condition || "NM",
     pressing: String(record.pressing || "").trim(),
@@ -237,6 +313,106 @@ function escapeText(value) {
 
 function normalizedText(value) {
   return String(value || "").trim().toLowerCase();
+}
+
+function normalizedGenreKey(value) {
+  return normalizedText(value)
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function cleanGenreLabel(value) {
+  return String(value || "").trim().replace(/\s+/g, " ");
+}
+
+function genrePresetFor(value) {
+  const cleanValue = cleanGenreLabel(value);
+  if (!cleanValue) return "";
+  const preset = GENRE_PRESETS.find(genre => normalizedGenreKey(genre) === normalizedGenreKey(cleanValue));
+  if (preset) return preset;
+
+  const directAlias = GENRE_ALIASES.get(normalizedText(cleanValue));
+  if (directAlias) return directAlias;
+
+  const normalizedValue = normalizedGenreKey(cleanValue);
+  for (const [alias, genre] of GENRE_ALIASES) {
+    const normalizedAlias = normalizedGenreKey(alias);
+    if (normalizedValue === normalizedAlias || normalizedValue.includes(normalizedAlias)) return genre;
+  }
+
+  return "";
+}
+
+function genreForCollection(value) {
+  return genrePresetFor(value) || cleanGenreLabel(value);
+}
+
+function optionMarkup(value, label = value) {
+  return `<option value="${escapeText(value)}">${escapeText(label)}</option>`;
+}
+
+function genreOptgroups(genres) {
+  const selectedGenres = new Set(genres.map(cleanGenreLabel).filter(Boolean));
+  const categoryGroups = GENRE_CATEGORIES.map(category => ({
+    label: category.label,
+    genres: category.genres.filter(genre => selectedGenres.has(genre))
+  })).filter(category => category.genres.length);
+  const customGenres = [...selectedGenres]
+    .filter(genre => !GENRE_PRESET_SET.has(genre))
+    .sort((a, b) => a.localeCompare(b, "ko"));
+
+  return [
+    ...categoryGroups.map(category => `
+      <optgroup label="${escapeText(category.label)}">
+        ${category.genres.map(genre => optionMarkup(genre)).join("")}
+      </optgroup>
+    `),
+    customGenres.length ? `
+      <optgroup label="내 장르">
+        ${customGenres.map(genre => optionMarkup(genre)).join("")}
+      </optgroup>
+    ` : ""
+  ].join("");
+}
+
+function renderGenreInputOptions(currentGenre = "") {
+  const current = cleanGenreLabel(currentGenre);
+  els.genreInput.innerHTML = [
+    optionMarkup("", "선택 안 함"),
+    ...GENRE_CATEGORIES.map(category => `
+      <optgroup label="${escapeText(category.label)}">
+        ${category.genres.map(genre => optionMarkup(genre)).join("")}
+      </optgroup>
+    `),
+    optionMarkup(CUSTOM_GENRE_VALUE, "직접 입력")
+  ].join("");
+
+  if (GENRE_PRESET_SET.has(current)) {
+    els.genreInput.value = current;
+    els.genreCustomInput.value = "";
+  } else if (current) {
+    els.genreInput.value = CUSTOM_GENRE_VALUE;
+    els.genreCustomInput.value = current;
+  } else {
+    els.genreInput.value = "";
+    els.genreCustomInput.value = "";
+  }
+
+  updateGenreCustomVisibility();
+}
+
+function updateGenreCustomVisibility() {
+  const isCustom = els.genreInput.value === CUSTOM_GENRE_VALUE;
+  els.genreCustomInput.hidden = !isCustom;
+  els.genreCustomInput.disabled = !isCustom;
+  if (isCustom) return;
+  els.genreCustomInput.value = "";
+}
+
+function selectedGenreValue() {
+  if (els.genreInput.value === CUSTOM_GENRE_VALUE) return cleanGenreLabel(els.genreCustomInput.value);
+  return cleanGenreLabel(els.genreInput.value);
 }
 
 function artistCreditName(result) {
@@ -430,7 +606,7 @@ async function searchCatalog() {
 
 function bestGenre(detail) {
   const genres = [...(detail.genres || [])].sort((a, b) => Number(b.count || 0) - Number(a.count || 0));
-  return genres[0]?.name || "";
+  return genreForCollection(genres[0]?.name || "");
 }
 
 async function lookupAlbumDetails(id) {
@@ -458,7 +634,7 @@ async function applyAlbumResult(id) {
   els.titleInput.value = result.title || "";
   els.artistInput.value = artistCreditName(result);
   els.yearInput.value = year;
-  if (genre) els.genreInput.value = genre;
+  if (genre) renderGenreInputOptions(genre);
   els.coverInput.value = albumCoverUrl(id, 500);
   els.coverFileInput.value = "";
   els.tagsInput.value = [...new Set(tags)].join(", ");
@@ -560,11 +736,11 @@ function filteredRecords() {
 }
 
 function renderGenreOptions() {
-  const genres = [...new Set(state.records.map(record => record.genre).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ko"));
+  const genres = [...new Set(state.records.map(record => cleanGenreLabel(record.genre)).filter(Boolean))];
   const current = state.genre;
   els.genreFilter.innerHTML = [
     `<option value="all">전체 장르</option>`,
-    ...genres.map(genre => `<option value="${escapeText(genre)}">${escapeText(genre)}</option>`)
+    genreOptgroups(genres)
   ].join("");
   els.genreFilter.value = genres.includes(current) ? current : "all";
   state.genre = els.genreFilter.value;
@@ -656,7 +832,7 @@ function openDialog(record = null) {
   els.titleInput.value = record?.title || "";
   els.artistInput.value = record?.artist || "";
   els.yearInput.value = record?.year || "";
-  els.genreInput.value = record?.genre || "";
+  renderGenreInputOptions(record?.genre || "");
   els.statusInput.value = record?.status || "owned";
   els.conditionInput.value = record?.condition || "NM";
   els.pressingInput.value = record?.pressing || "";
@@ -681,7 +857,7 @@ function recordFromForm() {
     title: els.titleInput.value,
     artist: els.artistInput.value,
     year: els.yearInput.value,
-    genre: els.genreInput.value,
+    genre: selectedGenreValue(),
     status: els.statusInput.value,
     condition: els.conditionInput.value,
     pressing: els.pressingInput.value,
@@ -1331,6 +1507,7 @@ function bindEvents() {
     state.genre = event.target.value;
     render();
   });
+  els.genreInput.addEventListener("change", updateGenreCustomVisibility);
 
   els.sortSelect.addEventListener("change", event => {
     state.sort = event.target.value;
