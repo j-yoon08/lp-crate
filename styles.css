@@ -583,12 +583,14 @@ h2 {
   display: block;
   padding: 10px;
   background: rgba(0, 0, 0, 0.64);
-  transform: translateY(calc(100% - 4px));
+  pointer-events: none;
+  transform: translateY(calc(100% + 2px));
   transition: transform 160ms ease;
 }
 
 .collection-board[data-view-mode="wall"] .record-card:hover .record-body,
 .collection-board[data-view-mode="wall"] .record-card:focus-within .record-body {
+  pointer-events: auto;
   transform: translateY(0);
 }
 
