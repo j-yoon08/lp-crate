@@ -122,6 +122,7 @@ const els = {
   board: document.querySelector("#collectionBoard"),
   emptyState: document.querySelector("#emptyState"),
   miniList: document.querySelector("#miniList"),
+  boardTitleMeta: document.querySelector("#boardTitleMeta"),
   visibleCount: document.querySelector("#visibleCount"),
   ownedCount: document.querySelector("#ownedCount"),
   wishCount: document.querySelector("#wishCount"),
@@ -162,6 +163,7 @@ const els = {
   pressingInput: document.querySelector("#pressingInput"),
   ratingInput: document.querySelector("#ratingInput"),
   priceInput: document.querySelector("#priceInput"),
+  quantityInput: document.querySelector("#quantityInput"),
   tagsInput: document.querySelector("#tagsInput"),
   coverInput: document.querySelector("#coverInput"),
   coverFileInput: document.querySelector("#coverFileInput"),
@@ -214,7 +216,7 @@ function load() {
   if (typeof prefs.genre === "string" && prefs.genre) {
     state.genre = prefs.genre === "all" ? "all" : genreForCollection(prefs.genre);
   }
-  if (["manual", "artist", "year", "rating"].includes(prefs.sort)) state.sort = prefs.sort;
+  if (["manual", "artist", "year", "rating", "price", "quantity"].includes(prefs.sort)) state.sort = prefs.sort;
   if (VIEW_MODES.has(prefs.viewMode)) state.viewMode = prefs.viewMode;
   if (THEMES.has(prefs.theme)) state.theme = prefs.theme;
 
@@ -257,6 +259,7 @@ function normalizeRecord(record) {
     pressing: String(record.pressing || "").trim(),
     rating: Number(record.rating || 0),
     price: normalizePrice(record.price),
+    quantity: normalizeQuantity(record.quantity),
     tags: Array.isArray(record.tags)
       ? record.tags.map(String).filter(Boolean)
       : String(record.tags || "").split(",").map(tag => tag.trim()).filter(Boolean),
@@ -343,6 +346,19 @@ function normalizeStatus(value) {
 function normalizePrice(value) {
   const numeric = Number(String(value ?? "").replace(/,/g, ""));
   return Number.isFinite(numeric) && numeric > 0 ? Math.round(numeric) : 0;
+}
+
+function normalizeQuantity(value) {
+  const numeric = Number(String(value ?? "").replace(/,/g, ""));
+  return Number.isFinite(numeric) && numeric > 0 ? Math.max(1, Math.floor(numeric)) : 1;
+}
+
+function quantitySum(records) {
+  return records.reduce((sum, record) => sum + normalizeQuantity(record.quantity), 0);
+}
+
+function recordTotalValue(record) {
+  return normalizePrice(record.price) * normalizeQuantity(record.quantity);
 }
 
 function formatWon(value) {
@@ -699,6 +715,7 @@ async function recordFromCatalogResult(result) {
     pressing: "",
     rating: 0,
     price: 0,
+    quantity: 1,
     tags: [...new Set(tags)],
     cover: albumCoverUrl(result.id, 500),
     notes: `MusicBrainz: ${musicBrainzUrl(result.id)}`
@@ -762,6 +779,8 @@ function filteredRecords() {
       if (state.sort === "artist") return a.artist.localeCompare(b.artist, "ko");
       if (state.sort === "year") return Number(a.year || 0) - Number(b.year || 0);
       if (state.sort === "rating") return Number(b.rating || 0) - Number(a.rating || 0);
+      if (state.sort === "price") return normalizePrice(b.price) - normalizePrice(a.price) || a.title.localeCompare(b.title, "ko");
+      if (state.sort === "quantity") return normalizeQuantity(b.quantity) - normalizeQuantity(a.quantity) || a.title.localeCompare(b.title, "ko");
       return 0;
     });
   }
@@ -780,14 +799,20 @@ function renderGenreOptions() {
   state.genre = els.genreFilter.value;
 }
 
+function renderBoardTitleMeta() {
+  const genre = state.genre === "all" ? "" : state.genre;
+  els.boardTitleMeta.textContent = genre;
+  els.boardTitleMeta.hidden = !genre;
+}
+
 function renderStats(records) {
   const ownedTotal = state.records
     .filter(record => record.status === "owned")
-    .reduce((sum, record) => sum + normalizePrice(record.price), 0);
-  els.ownedCount.textContent = state.records.filter(record => record.status === "owned").length;
-  els.wishCount.textContent = state.records.filter(record => record.status === "wishlist").length;
+    .reduce((sum, record) => sum + recordTotalValue(record), 0);
+  els.ownedCount.textContent = quantitySum(state.records.filter(record => record.status === "owned"));
+  els.wishCount.textContent = quantitySum(state.records.filter(record => record.status === "wishlist"));
   els.totalPrice.textContent = formatWon(ownedTotal);
-  els.visibleCount.textContent = `${records.length}장`;
+  els.visibleCount.textContent = `${quantitySum(records)}장`;
 }
 
 function renderMiniList(records) {
@@ -828,6 +853,7 @@ function renderBoard(records) {
           ${record.pressing ? `<span class="pill">${escapeText(record.pressing)}</span>` : ""}
           ${record.rating ? `<span class="pill">★ ${escapeText(record.rating)}</span>` : ""}
           ${record.price ? `<span class="pill">${escapeText(formatWon(record.price))}</span>` : ""}
+          ${normalizeQuantity(record.quantity) > 1 ? `<span class="pill">수량 ${escapeText(normalizeQuantity(record.quantity))}</span>` : ""}
         </div>
       </div>
     </article>
@@ -840,6 +866,7 @@ function render() {
   state.records = state.records.map(normalizeRecord);
   applyTheme();
   renderGenreOptions();
+  renderBoardTitleMeta();
   const records = filteredRecords();
   renderStats(records);
   renderMiniList(records);
@@ -875,6 +902,7 @@ function openDialog(record = null) {
   els.pressingInput.value = record?.pressing || "";
   els.ratingInput.value = record?.rating || "";
   els.priceInput.value = record?.price || "";
+  els.quantityInput.value = record?.quantity || 1;
   els.tagsInput.value = record?.tags?.join(", ") || "";
   els.coverInput.value = record?.cover && !record.cover.startsWith("data:") ? record.cover : "";
   els.notesInput.value = record?.notes || "";
@@ -900,6 +928,7 @@ function recordFromForm() {
     pressing: els.pressingInput.value,
     rating: els.ratingInput.value,
     price: els.priceInput.value,
+    quantity: els.quantityInput.value,
     tags: els.tagsInput.value,
     cover: state.coverDraft || els.coverInput.value || existing?.cover || PLACEHOLDER_COVER,
     notes: els.notesInput.value

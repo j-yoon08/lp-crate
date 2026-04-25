@@ -604,10 +604,36 @@ h2 {
 
 .title-stack h2 {
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
   font-size: 1.42rem;
   font-weight: 780;
   line-height: 1.1;
   letter-spacing: 0;
+}
+
+.board-title-meta {
+  max-width: 220px;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  overflow: hidden;
+  border: 1px solid var(--pill-line);
+  border-radius: 999px;
+  background: var(--pill-bg);
+  color: var(--pill-ink);
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.board-title-meta[hidden] {
+  display: none;
 }
 
 .toolbar {

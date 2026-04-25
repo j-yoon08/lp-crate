@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>LP Crate</title>
-    <link rel="stylesheet" href="./styles.css?v=20260425-direct-add">
+    <link rel="stylesheet" href="./styles.css?v=20260425-quantity-sort">
   </head>
   <body>
     <div class="app-shell">
@@ -102,7 +102,10 @@
       <main class="workspace">
         <header class="workspace-bar">
           <div class="title-stack">
-            <h2 id="boardTitle">내 LP 컬렉션</h2>
+            <h2 id="boardTitle">
+              <span>내 LP 컬렉션</span>
+              <span class="board-title-meta" id="boardTitleMeta" hidden></span>
+            </h2>
           </div>
           <div class="toolbar" aria-label="보기 옵션">
             <div class="view-switch" role="group" aria-label="보기 방식">
@@ -116,6 +119,8 @@
                 <option value="artist">아티스트</option>
                 <option value="year">발매연도</option>
                 <option value="rating">평점</option>
+                <option value="price">가격 높은순</option>
+                <option value="quantity">수량 많은순</option>
               </select>
             </label>
             <label>
@@ -215,6 +220,10 @@
             <input id="priceInput" name="price" type="number" min="0" step="1000" inputmode="numeric" placeholder="예: 45000">
           </label>
           <label class="field">
+            <span>수량</span>
+            <input id="quantityInput" name="quantity" type="number" min="1" step="1" inputmode="numeric" placeholder="1">
+          </label>
+          <label class="field">
             <span>태그</span>
             <input id="tagsInput" name="tags" placeholder="jazz, mono, sealed">
           </label>
@@ -243,6 +252,6 @@
       </form>
     </dialog>
 
-    <script src="./app.js?v=20260425-high-res-png" defer></script>
+    <script src="./app.js?v=20260425-quantity-sort" defer></script>
   </body>
 </html>
