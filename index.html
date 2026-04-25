@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>LP Crate</title>
-    <link rel="stylesheet" href="./styles.css?v=20260425-theme-price">
+    <link rel="stylesheet" href="./styles.css?v=20260425-status-cleanup">
   </head>
   <body>
     <div class="app-shell">
@@ -41,7 +41,6 @@
             <button class="segment is-active" type="button" data-filter="all">전체</button>
             <button class="segment" type="button" data-filter="owned">보유</button>
             <button class="segment" type="button" data-filter="wishlist">위시</button>
-            <button class="segment" type="button" data-filter="listening">청취중</button>
           </div>
         </section>
 
@@ -192,7 +191,6 @@
             <select id="statusInput" name="status">
               <option value="owned">보유</option>
               <option value="wishlist">위시</option>
-              <option value="listening">청취중</option>
             </select>
           </label>
           <label class="field">
@@ -251,6 +249,6 @@
       </form>
     </dialog>
 
-    <script src="./app.js?v=20260425-theme-price" defer></script>
+    <script src="./app.js?v=20260425-status-cleanup" defer></script>
   </body>
 </html>

@@ -11,6 +11,7 @@ const COVER_UPLOAD_LIMIT_BYTES = 900_000;
 const STORAGE_BACKUP_PREFIX = "lp-crate.recovered";
 const VIEW_MODES = new Set(["board", "wall"]);
 const THEMES = new Set(["light", "dark"]);
+const STATUSES = new Set(["owned", "wishlist"]);
 const CUSTOM_GENRE_VALUE = "__custom_genre__";
 const GENRE_CATEGORIES = [
   {
@@ -207,7 +208,8 @@ function load() {
   const prefs = parseStoredJson(PREFS_KEY, null);
   if (!prefs || typeof prefs !== "object" || Array.isArray(prefs)) return;
 
-  if (["all", "owned", "wishlist", "listening"].includes(prefs.filter)) state.filter = prefs.filter;
+  if (["all", "owned", "wishlist"].includes(prefs.filter)) state.filter = prefs.filter;
+  if (prefs.filter === "listening") state.filter = "owned";
   if (typeof prefs.genre === "string" && prefs.genre) {
     state.genre = prefs.genre === "all" ? "all" : genreForCollection(prefs.genre);
   }
@@ -249,7 +251,7 @@ function normalizeRecord(record) {
     artist: String(record.artist || "").trim(),
     year: String(record.year || "").trim(),
     genre: genreForCollection(record.genre),
-    status: record.status || "owned",
+    status: normalizeStatus(record.status),
     condition: record.condition || "NM",
     pressing: String(record.pressing || "").trim(),
     rating: Number(record.rating || 0),
@@ -315,8 +317,7 @@ function applyTheme() {
 function statusLabel(status) {
   return {
     owned: "보유",
-    wishlist: "위시",
-    listening: "청취중"
+    wishlist: "위시"
   }[status] || status;
 }
 
@@ -332,6 +333,10 @@ function escapeText(value) {
 
 function normalizedText(value) {
   return String(value || "").trim().toLowerCase();
+}
+
+function normalizeStatus(value) {
+  return STATUSES.has(value) ? value : "owned";
 }
 
 function normalizePrice(value) {
@@ -1399,8 +1404,7 @@ async function exportSharePng() {
     const filterSummary = {
       all: "All records",
       owned: "Owned",
-      wishlist: "Wishlist",
-      listening: "Listening"
+      wishlist: "Wishlist"
     }[state.filter] || "Collection";
     ctx.fillText(`${records.length} records · ${filterSummary}`, 60, 148);
 
