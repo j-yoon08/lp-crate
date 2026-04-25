@@ -123,7 +123,6 @@ const els = {
   visibleCount: document.querySelector("#visibleCount"),
   ownedCount: document.querySelector("#ownedCount"),
   wishCount: document.querySelector("#wishCount"),
-  spinCount: document.querySelector("#spinCount"),
   totalPrice: document.querySelector("#totalPrice"),
   themeToggleButton: document.querySelector("#themeToggleButton"),
   searchInput: document.querySelector("#searchInput"),
@@ -163,7 +162,6 @@ const els = {
   tagsInput: document.querySelector("#tagsInput"),
   coverInput: document.querySelector("#coverInput"),
   coverFileInput: document.querySelector("#coverFileInput"),
-  spinInput: document.querySelector("#spinInput"),
   notesInput: document.querySelector("#notesInput"),
   albumLookupInput: document.querySelector("#albumLookupInput"),
   albumLookupButton: document.querySelector("#albumLookupButton"),
@@ -213,7 +211,7 @@ function load() {
   if (typeof prefs.genre === "string" && prefs.genre) {
     state.genre = prefs.genre === "all" ? "all" : genreForCollection(prefs.genre);
   }
-  if (["manual", "artist", "year", "rating", "recent"].includes(prefs.sort)) state.sort = prefs.sort;
+  if (["manual", "artist", "year", "rating"].includes(prefs.sort)) state.sort = prefs.sort;
   if (VIEW_MODES.has(prefs.viewMode)) state.viewMode = prefs.viewMode;
   if (THEMES.has(prefs.theme)) state.theme = prefs.theme;
 
@@ -256,8 +254,6 @@ function normalizeRecord(record) {
     pressing: String(record.pressing || "").trim(),
     rating: Number(record.rating || 0),
     price: normalizePrice(record.price),
-    spinCount: Number(record.spinCount || 0),
-    lastPlayed: record.lastPlayed || "",
     tags: Array.isArray(record.tags)
       ? record.tags.map(String).filter(Boolean)
       : String(record.tags || "").split(",").map(tag => tag.trim()).filter(Boolean),
@@ -698,7 +694,6 @@ async function recordFromCatalogResult(result) {
     pressing: "",
     rating: 0,
     price: 0,
-    spinCount: 0,
     tags: [...new Set(tags)],
     cover: albumCoverUrl(result.id, 500),
     notes: `MusicBrainz: ${musicBrainzUrl(result.id)}`
@@ -762,7 +757,6 @@ function filteredRecords() {
       if (state.sort === "artist") return a.artist.localeCompare(b.artist, "ko");
       if (state.sort === "year") return Number(a.year || 0) - Number(b.year || 0);
       if (state.sort === "rating") return Number(b.rating || 0) - Number(a.rating || 0);
-      if (state.sort === "recent") return String(b.lastPlayed || "").localeCompare(String(a.lastPlayed || ""));
       return 0;
     });
   }
@@ -787,7 +781,6 @@ function renderStats(records) {
     .reduce((sum, record) => sum + normalizePrice(record.price), 0);
   els.ownedCount.textContent = state.records.filter(record => record.status === "owned").length;
   els.wishCount.textContent = state.records.filter(record => record.status === "wishlist").length;
-  els.spinCount.textContent = state.records.reduce((sum, record) => sum + Number(record.spinCount || 0), 0);
   els.totalPrice.textContent = formatWon(ownedTotal);
   els.visibleCount.textContent = `${records.length}장`;
 }
@@ -815,7 +808,6 @@ function renderBoard(records) {
     <article class="record-card" draggable="true" data-record-id="${escapeText(record.id)}">
       <img class="record-cover" src="${escapeText(record.cover || PLACEHOLDER_COVER)}" alt="${escapeText(record.title)} 표지" onerror="this.onerror=null;this.src='${PLACEHOLDER_COVER}'">
       <div class="card-actions">
-        <button type="button" data-spin-id="${escapeText(record.id)}" aria-label="재생 횟수 추가" title="재생 횟수 추가">+</button>
         <button type="button" data-edit-id="${escapeText(record.id)}" aria-label="수정" title="수정">✎</button>
       </div>
       <div class="record-body">
@@ -831,7 +823,6 @@ function renderBoard(records) {
           ${record.pressing ? `<span class="pill">${escapeText(record.pressing)}</span>` : ""}
           ${record.rating ? `<span class="pill">★ ${escapeText(record.rating)}</span>` : ""}
           ${record.price ? `<span class="pill">${escapeText(formatWon(record.price))}</span>` : ""}
-          ${record.spinCount ? `<span class="pill">${escapeText(record.spinCount)}회</span>` : ""}
         </div>
       </div>
     </article>
@@ -881,7 +872,6 @@ function openDialog(record = null) {
   els.priceInput.value = record?.price || "";
   els.tagsInput.value = record?.tags?.join(", ") || "";
   els.coverInput.value = record?.cover && !record.cover.startsWith("data:") ? record.cover : "";
-  els.spinInput.value = record?.spinCount || 0;
   els.notesInput.value = record?.notes || "";
   els.deleteRecordButton.hidden = !record;
   els.dialog.showModal();
@@ -907,9 +897,7 @@ function recordFromForm() {
     price: els.priceInput.value,
     tags: els.tagsInput.value,
     cover: state.coverDraft || els.coverInput.value || existing?.cover || PLACEHOLDER_COVER,
-    spinCount: els.spinInput.value,
-    notes: els.notesInput.value,
-    lastPlayed: existing?.lastPlayed || ""
+    notes: els.notesInput.value
   });
 }
 
@@ -938,15 +926,6 @@ function deleteRecord() {
 
 function findRecord(id) {
   return state.records.find(record => record.id === id);
-}
-
-function incrementSpin(id) {
-  const record = findRecord(id);
-  if (!record) return;
-  commitCollectionChange(() => {
-    record.spinCount = Number(record.spinCount || 0) + 1;
-    record.lastPlayed = new Date().toISOString().slice(0, 10);
-  }, "저장 공간이 부족해 재생 횟수를 저장하지 못했습니다.");
 }
 
 function moveRecord(sourceId, targetId) {
@@ -1574,9 +1553,7 @@ function bindEvents() {
 
   document.addEventListener("click", event => {
     const editButton = event.target.closest("[data-edit-id]");
-    const spinButton = event.target.closest("[data-spin-id]");
     if (editButton) openDialog(findRecord(editButton.dataset.editId));
-    if (spinButton) incrementSpin(spinButton.dataset.spinId);
   });
 
   els.board.addEventListener("dragstart", event => {

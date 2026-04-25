@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>LP Crate</title>
-    <link rel="stylesheet" href="./styles.css?v=20260425-status-cleanup">
+    <link rel="stylesheet" href="./styles.css?v=20260425-playback-cleanup">
   </head>
   <body>
     <div class="app-shell">
@@ -52,10 +52,6 @@
           <div>
             <strong id="wishCount">0</strong>
             <span>위시</span>
-          </div>
-          <div>
-            <strong id="spinCount">0</strong>
-            <span>재생</span>
           </div>
           <div>
             <strong id="totalPrice">0원</strong>
@@ -117,7 +113,6 @@
                 <option value="artist">아티스트</option>
                 <option value="year">발매연도</option>
                 <option value="rating">평점</option>
-                <option value="recent">최근 재생</option>
               </select>
             </label>
             <label>
@@ -228,10 +223,6 @@
             <span>표지 파일</span>
             <input id="coverFileInput" type="file" accept="image/*">
           </label>
-          <label class="field">
-            <span>재생 횟수</span>
-            <input id="spinInput" name="spinCount" type="number" min="0" step="1">
-          </label>
         </div>
 
         <label class="field notes-field">
@@ -249,6 +240,6 @@
       </form>
     </dialog>
 
-    <script src="./app.js?v=20260425-status-cleanup" defer></script>
+    <script src="./app.js?v=20260425-playback-cleanup" defer></script>
   </body>
 </html>

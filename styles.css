@@ -420,7 +420,7 @@ h2 {
 
 .stats-strip {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 9px;
   padding: 16px 0;
   border-bottom: 1px solid var(--line);
