@@ -8,6 +8,8 @@ const MUSICBRAINZ_REFRESH_DELAY = 1200;
 const CATALOG_SEARCH_LIMIT = 50;
 const DIALOG_SEARCH_LIMIT = 24;
 const COVER_UPLOAD_LIMIT_BYTES = 900_000;
+const PNG_EXPORT_LAYOUT_SIZE = 1080;
+const PNG_EXPORT_SCALE = 3;
 const STORAGE_BACKUP_PREFIX = "lp-crate.recovered";
 const VIEW_MODES = new Set(["board", "wall"]);
 const THEMES = new Set(["light", "dark"]);
@@ -1310,25 +1312,41 @@ function shareGrid(recordsLength) {
   };
 }
 
-async function coverToExportHref(cover) {
+async function coverToExportHref(cover, highResolution = false) {
   const source = cover || PLACEHOLDER_COVER;
   if (source.startsWith("data:image/")) return source;
   if (source === PLACEHOLDER_COVER) return EXPORT_PLACEHOLDER_COVER;
 
   if (/^https?:\/\//i.test(source) || source.startsWith("./assets/")) {
-    const response = await fetch(source);
-    if (!response.ok) throw new Error(`cover ${response.status}`);
-    const blob = await response.blob();
-    if (!blob.type.startsWith("image/")) throw new Error("cover is not an image");
-    return blobToDataUrl(blob);
+    const candidates = highResolution ? [...new Set([highResolutionCoverSource(source), source])] : [source];
+    let lastError = null;
+    for (const candidate of candidates) {
+      try {
+        const response = await fetch(candidate);
+        if (!response.ok) throw new Error(`cover ${response.status}`);
+        const blob = await response.blob();
+        if (!blob.type.startsWith("image/")) throw new Error("cover is not an image");
+        return blobToDataUrl(blob);
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    throw lastError || new Error("cover unavailable");
   }
 
   return EXPORT_PLACEHOLDER_COVER;
 }
 
+function highResolutionCoverSource(source) {
+  if (source.startsWith(COVER_ART_RELEASE_GROUP_URL)) {
+    return source.replace(/\/front-(250|500)(?=([?#]|$))/, "/front-1200");
+  }
+  return source;
+}
+
 async function coverImageForExport(record) {
   try {
-    return await loadExportImage(await coverToExportHref(record.cover));
+    return await loadExportImage(await coverToExportHref(record.cover, true));
   } catch (error) {
     console.warn("공유 이미지 표지 로드에 실패했습니다.", record.title, error);
     return loadExportImage(EXPORT_PLACEHOLDER_COVER);
@@ -1414,13 +1432,16 @@ async function exportSharePng() {
 
   try {
     const canvas = document.createElement("canvas");
-    canvas.width = 1080;
-    canvas.height = 1080;
+    canvas.width = PNG_EXPORT_LAYOUT_SIZE * PNG_EXPORT_SCALE;
+    canvas.height = PNG_EXPORT_LAYOUT_SIZE * PNG_EXPORT_SCALE;
     const ctx = canvas.getContext("2d");
+    ctx.scale(PNG_EXPORT_SCALE, PNG_EXPORT_SCALE);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
     const displayRecords = records.slice(0, 49);
     const hiddenCount = Math.max(records.length - displayRecords.length, 0);
 
-    drawExportBackground(ctx, canvas.width, canvas.height);
+    drawExportBackground(ctx, PNG_EXPORT_LAYOUT_SIZE, PNG_EXPORT_LAYOUT_SIZE);
     drawCanvasBrandMark(ctx, 58, 52, 42);
     ctx.fillStyle = "#171719";
     ctx.font = "760 25px Inter, system-ui, sans-serif";
@@ -1461,8 +1482,8 @@ async function exportSharePng() {
       const { columns, rows } = shareGrid(displayRecords.length);
       const panelX = 50;
       const panelY = 184;
-      const panelWidth = canvas.width - panelX * 2;
-      const panelHeight = canvas.height - panelY - 50;
+      const panelWidth = PNG_EXPORT_LAYOUT_SIZE - panelX * 2;
+      const panelHeight = PNG_EXPORT_LAYOUT_SIZE - panelY - 50;
       const panelPadding = columns >= 6 ? 22 : 28;
       const gap = columns >= 6 ? 10 : 14;
       const availableWidth = panelWidth - panelPadding * 2;
