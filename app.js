@@ -305,8 +305,10 @@ function commitCollectionChange(mutator, failureMessage) {
 
 function applyTheme() {
   const theme = THEMES.has(state.theme) ? state.theme : "light";
+  const label = theme === "dark" ? "다크" : "라이트";
   document.documentElement.dataset.theme = theme;
-  els.themeToggleButton.textContent = theme === "dark" ? "라이트" : "다크";
+  els.themeToggleButton.textContent = label;
+  els.themeToggleButton.setAttribute("aria-label", `${label} 모드`);
   els.themeToggleButton.setAttribute("aria-pressed", String(theme === "dark"));
 }
 
