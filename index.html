@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>LP Crate</title>
-    <link rel="stylesheet" href="./styles.css?v=20260425-png-copy">
+    <link rel="stylesheet" href="./styles.css?v=20260425-theme-price">
   </head>
   <body>
     <div class="app-shell">
@@ -15,6 +15,7 @@
             <h1>LP Crate</h1>
             <p>Vinyl archive</p>
           </div>
+          <button class="theme-toggle" id="themeToggleButton" type="button" aria-pressed="false">다크</button>
         </header>
 
         <section class="control-group" aria-labelledby="searchHeading">
@@ -56,6 +57,10 @@
           <div>
             <strong id="spinCount">0</strong>
             <span>재생</span>
+          </div>
+          <div>
+            <strong id="totalPrice">0원</strong>
+            <span>보유총액</span>
           </div>
         </section>
 
@@ -210,6 +215,10 @@
             <input id="ratingInput" name="rating" type="number" min="0" max="5" step="0.5">
           </label>
           <label class="field">
+            <span>가격</span>
+            <input id="priceInput" name="price" type="number" min="0" step="1000" inputmode="numeric" placeholder="예: 45000">
+          </label>
+          <label class="field">
             <span>태그</span>
             <input id="tagsInput" name="tags" placeholder="jazz, mono, sealed">
           </label>
@@ -242,6 +251,6 @@
       </form>
     </dialog>
 
-    <script src="./app.js?v=20260425-png-copy" defer></script>
+    <script src="./app.js?v=20260425-theme-price" defer></script>
   </body>
 </html>

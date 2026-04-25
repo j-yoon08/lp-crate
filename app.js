@@ -10,6 +10,7 @@ const DIALOG_SEARCH_LIMIT = 24;
 const COVER_UPLOAD_LIMIT_BYTES = 900_000;
 const STORAGE_BACKUP_PREFIX = "lp-crate.recovered";
 const VIEW_MODES = new Set(["board", "wall"]);
+const THEMES = new Set(["light", "dark"]);
 const CUSTOM_GENRE_VALUE = "__custom_genre__";
 const GENRE_CATEGORIES = [
   {
@@ -101,6 +102,7 @@ const state = {
   sort: "manual",
   columns: 5,
   viewMode: "board",
+  theme: "light",
   dragId: null,
   dragCatalogResultId: null,
   coverDraft: "",
@@ -121,6 +123,8 @@ const els = {
   ownedCount: document.querySelector("#ownedCount"),
   wishCount: document.querySelector("#wishCount"),
   spinCount: document.querySelector("#spinCount"),
+  totalPrice: document.querySelector("#totalPrice"),
+  themeToggleButton: document.querySelector("#themeToggleButton"),
   searchInput: document.querySelector("#searchInput"),
   catalogSearchButton: document.querySelector("#catalogSearchButton"),
   catalogSearchStatus: document.querySelector("#catalogSearchStatus"),
@@ -154,6 +158,7 @@ const els = {
   conditionInput: document.querySelector("#conditionInput"),
   pressingInput: document.querySelector("#pressingInput"),
   ratingInput: document.querySelector("#ratingInput"),
+  priceInput: document.querySelector("#priceInput"),
   tagsInput: document.querySelector("#tagsInput"),
   coverInput: document.querySelector("#coverInput"),
   coverFileInput: document.querySelector("#coverFileInput"),
@@ -208,6 +213,7 @@ function load() {
   }
   if (["manual", "artist", "year", "rating", "recent"].includes(prefs.sort)) state.sort = prefs.sort;
   if (VIEW_MODES.has(prefs.viewMode)) state.viewMode = prefs.viewMode;
+  if (THEMES.has(prefs.theme)) state.theme = prefs.theme;
 
   const columns = Number(prefs.columns);
   if (Number.isFinite(columns)) state.columns = Math.min(8, Math.max(3, columns));
@@ -225,7 +231,8 @@ function save() {
       genre: state.genre,
       sort: state.sort,
       columns: state.columns,
-      viewMode: state.viewMode
+      viewMode: state.viewMode,
+      theme: state.theme
     }));
     return true;
   } catch (error) {
@@ -246,6 +253,7 @@ function normalizeRecord(record) {
     condition: record.condition || "NM",
     pressing: String(record.pressing || "").trim(),
     rating: Number(record.rating || 0),
+    price: normalizePrice(record.price),
     spinCount: Number(record.spinCount || 0),
     lastPlayed: record.lastPlayed || "",
     tags: Array.isArray(record.tags)
@@ -270,7 +278,8 @@ function snapshotCollectionState() {
     genre: state.genre,
     sort: state.sort,
     columns: state.columns,
-    viewMode: state.viewMode
+    viewMode: state.viewMode,
+    theme: state.theme
   };
 }
 
@@ -281,6 +290,7 @@ function restoreCollectionState(snapshot) {
   state.sort = snapshot.sort;
   state.columns = snapshot.columns;
   state.viewMode = VIEW_MODES.has(snapshot.viewMode) ? snapshot.viewMode : "board";
+  state.theme = THEMES.has(snapshot.theme) ? snapshot.theme : "light";
 }
 
 function commitCollectionChange(mutator, failureMessage) {
@@ -293,6 +303,13 @@ function commitCollectionChange(mutator, failureMessage) {
   render();
   alert(failureMessage || "저장 공간이 부족해 변경사항을 저장하지 못했습니다.");
   return false;
+}
+
+function applyTheme() {
+  const theme = THEMES.has(state.theme) ? state.theme : "light";
+  document.documentElement.dataset.theme = theme;
+  els.themeToggleButton.textContent = theme === "dark" ? "라이트" : "다크";
+  els.themeToggleButton.setAttribute("aria-pressed", String(theme === "dark"));
 }
 
 function statusLabel(status) {
@@ -315,6 +332,16 @@ function escapeText(value) {
 
 function normalizedText(value) {
   return String(value || "").trim().toLowerCase();
+}
+
+function normalizePrice(value) {
+  const numeric = Number(String(value ?? "").replace(/,/g, ""));
+  return Number.isFinite(numeric) && numeric > 0 ? Math.round(numeric) : 0;
+}
+
+function formatWon(value) {
+  const price = normalizePrice(value);
+  return `${new Intl.NumberFormat("ko-KR").format(price)}원`;
 }
 
 function normalizedGenreKey(value) {
@@ -665,6 +692,7 @@ async function recordFromCatalogResult(result) {
     condition: "NM",
     pressing: "",
     rating: 0,
+    price: 0,
     spinCount: 0,
     tags: [...new Set(tags)],
     cover: albumCoverUrl(result.id, 500),
@@ -749,9 +777,13 @@ function renderGenreOptions() {
 }
 
 function renderStats(records) {
+  const ownedTotal = state.records
+    .filter(record => record.status === "owned")
+    .reduce((sum, record) => sum + normalizePrice(record.price), 0);
   els.ownedCount.textContent = state.records.filter(record => record.status === "owned").length;
   els.wishCount.textContent = state.records.filter(record => record.status === "wishlist").length;
   els.spinCount.textContent = state.records.reduce((sum, record) => sum + Number(record.spinCount || 0), 0);
+  els.totalPrice.textContent = formatWon(ownedTotal);
   els.visibleCount.textContent = `${records.length}장`;
 }
 
@@ -793,6 +825,7 @@ function renderBoard(records) {
           ${record.genre ? `<span class="pill">${escapeText(record.genre)}</span>` : ""}
           ${record.pressing ? `<span class="pill">${escapeText(record.pressing)}</span>` : ""}
           ${record.rating ? `<span class="pill">★ ${escapeText(record.rating)}</span>` : ""}
+          ${record.price ? `<span class="pill">${escapeText(formatWon(record.price))}</span>` : ""}
           ${record.spinCount ? `<span class="pill">${escapeText(record.spinCount)}회</span>` : ""}
         </div>
       </div>
@@ -804,6 +837,7 @@ function renderBoard(records) {
 
 function render() {
   state.records = state.records.map(normalizeRecord);
+  applyTheme();
   renderGenreOptions();
   const records = filteredRecords();
   renderStats(records);
@@ -839,6 +873,7 @@ function openDialog(record = null) {
   els.conditionInput.value = record?.condition || "NM";
   els.pressingInput.value = record?.pressing || "";
   els.ratingInput.value = record?.rating || "";
+  els.priceInput.value = record?.price || "";
   els.tagsInput.value = record?.tags?.join(", ") || "";
   els.coverInput.value = record?.cover && !record.cover.startsWith("data:") ? record.cover : "";
   els.spinInput.value = record?.spinCount || 0;
@@ -864,6 +899,7 @@ function recordFromForm() {
     condition: els.conditionInput.value,
     pressing: els.pressingInput.value,
     rating: els.ratingInput.value,
+    price: els.priceInput.value,
     tags: els.tagsInput.value,
     cover: state.coverDraft || els.coverInput.value || existing?.cover || PLACEHOLDER_COVER,
     spinCount: els.spinInput.value,
@@ -1610,6 +1646,10 @@ function bindEvents() {
   els.exportPngButton.addEventListener("click", exportSharePng);
   els.refreshRecordsButton.addEventListener("click", refreshRecords);
   els.resetCollectionButton.addEventListener("click", resetCollection);
+  els.themeToggleButton.addEventListener("click", () => {
+    state.theme = state.theme === "dark" ? "light" : "dark";
+    render();
+  });
   els.importFileInput.addEventListener("change", event => {
     const file = event.target.files?.[0];
     if (file) importJson(file);
