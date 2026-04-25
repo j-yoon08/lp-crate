@@ -272,6 +272,14 @@ h2 {
   letter-spacing: 0;
 }
 
+.search-title-row {
+  margin-bottom: 12px;
+}
+
+.search-title-row h2 {
+  margin-bottom: 0;
+}
+
 .icon-button {
   width: 38px;
   min-width: 38px;
@@ -280,6 +288,13 @@ h2 {
   place-items: center;
   font-size: 1.28rem;
   font-weight: 600;
+}
+
+.add-record-button {
+  width: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  font-size: 1.05rem;
 }
 
 .control-group {

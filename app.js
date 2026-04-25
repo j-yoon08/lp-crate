@@ -134,6 +134,7 @@ const els = {
   columnRange: document.querySelector("#columnRange"),
   viewModeButtons: [...document.querySelectorAll("[data-view-mode]")],
   segments: [...document.querySelectorAll("[data-filter]")],
+  manualAddButton: document.querySelector("#manualAddButton"),
   emptyAddButton: document.querySelector("#emptyAddButton"),
   exportJsonButton: document.querySelector("#exportJsonButton"),
   importJsonButton: document.querySelector("#importJsonButton"),
@@ -1538,6 +1539,7 @@ async function exportSharePng() {
 }
 
 function bindEvents() {
+  els.manualAddButton.addEventListener("click", () => openDialog());
   els.emptyAddButton.addEventListener("click", () => openDialog());
   els.closeDialogButton.addEventListener("click", closeDialog);
   els.cancelDialogButton.addEventListener("click", closeDialog);
