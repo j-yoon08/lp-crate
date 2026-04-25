@@ -1253,6 +1253,53 @@ function drawCoverToCanvas(ctx, image, x, y, size, radius = 14, shadow = true) {
   ctx.stroke();
 }
 
+function clippedCanvasText(ctx, value, maxWidth) {
+  const text = String(value || "").trim();
+  const suffix = "...";
+  if (!text || maxWidth <= 0) return "";
+  if (ctx.measureText(text).width <= maxWidth) return text;
+  if (ctx.measureText(suffix).width > maxWidth) return "";
+
+  let low = 0;
+  let high = text.length;
+  while (low < high) {
+    const mid = Math.ceil((low + high) / 2);
+    const candidate = `${text.slice(0, mid).trimEnd()}${suffix}`;
+    if (ctx.measureText(candidate).width <= maxWidth) {
+      low = mid;
+    } else {
+      high = mid - 1;
+    }
+  }
+  return `${text.slice(0, low).trimEnd()}${suffix}`;
+}
+
+function drawCanvasTextLine(ctx, value, x, y, maxWidth) {
+  const line = clippedCanvasText(ctx, value, maxWidth);
+  if (line) ctx.fillText(line, x, y);
+}
+
+function shareInfoMetrics(columns) {
+  if (columns >= 7) return { height: 32, titleSize: 9, artistSize: 8, titleOffset: 14, artistOffset: 27 };
+  if (columns >= 6) return { height: 38, titleSize: 10, artistSize: 9, titleOffset: 16, artistOffset: 31 };
+  if (columns >= 5) return { height: 44, titleSize: 12, artistSize: 10, titleOffset: 19, artistOffset: 36 };
+  return { height: 52, titleSize: 14, artistSize: 12, titleOffset: 22, artistOffset: 42 };
+}
+
+function drawAlbumInfoToCanvas(ctx, record, x, y, width, metrics) {
+  const textWidth = Math.max(width - 4, 0);
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = "#171719";
+  ctx.font = `760 ${metrics.titleSize}px Inter, system-ui, sans-serif`;
+  drawCanvasTextLine(ctx, record.title || "Untitled", x + width / 2, y + metrics.titleOffset, textWidth);
+  ctx.fillStyle = "#64666b";
+  ctx.font = `520 ${metrics.artistSize}px Inter, system-ui, sans-serif`;
+  drawCanvasTextLine(ctx, record.artist || "", x + width / 2, y + metrics.artistOffset, textWidth);
+  ctx.restore();
+}
+
 function shareGrid(recordsLength) {
   const count = Math.max(recordsLength, 1);
   const columns = count <= 4 ? 2 : count <= 9 ? 3 : count <= 16 ? 4 : count <= 25 ? 5 : count <= 36 ? 6 : 7;
@@ -1419,12 +1466,14 @@ async function exportSharePng() {
       const gap = columns >= 6 ? 10 : 14;
       const availableWidth = panelWidth - panelPadding * 2;
       const availableHeight = panelHeight - panelPadding * 2;
+      const infoMetrics = shareInfoMetrics(columns);
       const tile = Math.floor(Math.min(
         (availableWidth - gap * (columns - 1)) / columns,
-        (availableHeight - gap * (rows - 1)) / rows
+        (availableHeight - gap * (rows - 1) - infoMetrics.height * rows) / rows
       ));
+      const cellHeight = tile + infoMetrics.height;
       const gridWidth = tile * columns + gap * (columns - 1);
-      const gridHeight = tile * rows + gap * (rows - 1);
+      const gridHeight = cellHeight * rows + gap * (rows - 1);
       const startX = Math.floor(panelX + panelPadding + (availableWidth - gridWidth) / 2);
       const startY = Math.floor(panelY + panelPadding + (availableHeight - gridHeight) / 2);
       const images = await Promise.all(displayRecords.map(coverImageForExport));
@@ -1443,10 +1492,11 @@ async function exportSharePng() {
       ctx.stroke();
 
       images.forEach((image, index) => {
+        const record = displayRecords[index];
         const col = index % columns;
         const row = Math.floor(index / columns);
         const x = startX + col * (tile + gap);
-        const y = startY + row * (tile + gap);
+        const y = startY + row * (cellHeight + gap);
         drawCoverToCanvas(ctx, image, x, y, tile, columns >= 6 ? 10 : 14);
 
         if (hiddenCount && index === images.length - 1) {
@@ -1464,6 +1514,15 @@ async function exportSharePng() {
           ctx.textAlign = "start";
           ctx.textBaseline = "alphabetic";
         }
+
+        drawAlbumInfoToCanvas(
+          ctx,
+          hiddenCount && index === images.length - 1 ? { title: `${hiddenCount}장 더 있음`, artist: "" } : record,
+          x,
+          y + tile,
+          tile,
+          infoMetrics
+        );
       });
     }
 
