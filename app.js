@@ -353,6 +353,17 @@ function normalizeQuantity(value) {
   return Number.isFinite(numeric) && numeric > 0 ? Math.max(1, Math.floor(numeric)) : 1;
 }
 
+function releaseYearForSort(value) {
+  const year = Number(String(value || "").slice(0, 4));
+  return Number.isFinite(year) && year > 0 ? year : Number.POSITIVE_INFINITY;
+}
+
+function compareArtistThenYear(a, b) {
+  return String(a.artist || "").localeCompare(String(b.artist || ""), "ko", { sensitivity: "base" })
+    || releaseYearForSort(a.year) - releaseYearForSort(b.year)
+    || String(a.title || "").localeCompare(String(b.title || ""), "ko", { sensitivity: "base" });
+}
+
 function quantitySum(records) {
   return records.reduce((sum, record) => sum + normalizeQuantity(record.quantity), 0);
 }
@@ -776,7 +787,7 @@ function filteredRecords() {
 
   if (state.sort !== "manual") {
     records = [...records].sort((a, b) => {
-      if (state.sort === "artist") return a.artist.localeCompare(b.artist, "ko");
+      if (state.sort === "artist") return compareArtistThenYear(a, b);
       if (state.sort === "year") return Number(a.year || 0) - Number(b.year || 0);
       if (state.sort === "rating") return Number(b.rating || 0) - Number(a.rating || 0);
       if (state.sort === "price") return normalizePrice(b.price) - normalizePrice(a.price) || a.title.localeCompare(b.title, "ko");
