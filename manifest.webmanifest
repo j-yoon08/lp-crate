@@ -1,0 +1,18 @@
+{
+  "name": "LP Crate",
+  "short_name": "LP Crate",
+  "description": "Static browser app for organizing a vinyl collection with localStorage, JSON backup, and share image export.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f5f6",
+  "theme_color": "#171719",
+  "icons": [
+    {
+      "src": "./favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

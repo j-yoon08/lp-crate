@@ -97,6 +97,68 @@ const EXPORT_PLACEHOLDER_COVER = `data:image/svg+xml;charset=UTF-8,${encodeURICo
     <circle cx="250" cy="250" r="14" fill="#9a9aa0"/>
   </svg>
 `)}`;
+const SAMPLE_RECORDS = [
+  {
+    title: "Neon Groove",
+    artist: "Mina Park Trio",
+    year: "1984",
+    genre: "City Pop",
+    status: "owned",
+    condition: "NM",
+    pressing: "Japan OBI",
+    rating: 4.5,
+    price: 42000,
+    quantity: 1,
+    tags: ["sample", "city pop"],
+    cover: "./assets/cover-neon-groove.svg",
+    notes: "샘플 데이터입니다. 직접 수정하거나 JSON으로 내보낼 수 있습니다."
+  },
+  {
+    title: "Blue Hour Sketches",
+    artist: "The Han River Quartet",
+    year: "1972",
+    genre: "Jazz",
+    status: "owned",
+    condition: "EX",
+    pressing: "KR stereo",
+    rating: 4,
+    price: 28000,
+    quantity: 2,
+    tags: ["sample", "jazz"],
+    cover: "./assets/cover-blue-hour.svg",
+    notes: "수량과 가격 합산을 확인하기 위한 샘플입니다."
+  },
+  {
+    title: "Analog Dust",
+    artist: "Room Tone Archive",
+    year: "1998",
+    genre: "Ambient",
+    status: "wishlist",
+    condition: "VG+",
+    pressing: "EU reissue",
+    rating: 3.5,
+    price: 36000,
+    quantity: 1,
+    tags: ["sample", "ambient"],
+    cover: "./assets/cover-analog-dust.svg",
+    notes: "위시 상태 샘플입니다."
+  },
+  {
+    title: "Soul Mono Press",
+    artist: "June Lee & The Satellites",
+    year: "1967",
+    genre: "Soul",
+    status: "owned",
+    condition: "VG+",
+    pressing: "US mono",
+    rating: 5,
+    price: 68000,
+    quantity: 1,
+    tags: ["sample", "mono"],
+    cover: "./assets/cover-soul-mono.svg",
+    notes: "보드/커버월 보기 전환을 확인하기 좋은 샘플입니다."
+  }
+];
 
 const state = {
   records: [],
@@ -121,6 +183,8 @@ const els = {
   boardWrap: document.querySelector("#boardWrap"),
   board: document.querySelector("#collectionBoard"),
   emptyState: document.querySelector("#emptyState"),
+  emptyTitle: document.querySelector("#emptyTitle"),
+  emptyCopy: document.querySelector("#emptyCopy"),
   miniList: document.querySelector("#miniList"),
   boardTitleMeta: document.querySelector("#boardTitleMeta"),
   visibleCount: document.querySelector("#visibleCount"),
@@ -139,6 +203,8 @@ const els = {
   segments: [...document.querySelectorAll("[data-filter]")],
   manualAddButton: document.querySelector("#manualAddButton"),
   emptyAddButton: document.querySelector("#emptyAddButton"),
+  sampleCollectionButton: document.querySelector("#sampleCollectionButton"),
+  clearFiltersButton: document.querySelector("#clearFiltersButton"),
   exportJsonButton: document.querySelector("#exportJsonButton"),
   importJsonButton: document.querySelector("#importJsonButton"),
   exportSvgButton: document.querySelector("#exportSvgButton"),
@@ -841,6 +907,47 @@ function renderMiniList(records) {
   `).join("");
 }
 
+function renderEmptyState(records) {
+  const hasVisibleRecords = records.length > 0;
+  const hasCollectionRecords = state.records.length > 0;
+  els.emptyState.hidden = hasVisibleRecords;
+  if (hasVisibleRecords) return;
+
+  if (hasCollectionRecords) {
+    els.emptyTitle.textContent = "현재 필터에 맞는 LP가 없습니다";
+    els.emptyCopy.textContent = "상태나 장르 필터를 풀면 저장된 LP를 다시 볼 수 있습니다.";
+    els.sampleCollectionButton.hidden = true;
+    els.clearFiltersButton.hidden = false;
+    return;
+  }
+
+  els.emptyTitle.textContent = "아직 컬렉션이 비어 있습니다";
+  els.emptyCopy.textContent = "MusicBrainz에서 검색하거나 직접 추가해서 LP 보유·위시 목록을 정리하세요.";
+  els.sampleCollectionButton.hidden = false;
+  els.clearFiltersButton.hidden = true;
+}
+
+function loadSampleCollection() {
+  if (state.records.length && !confirm("샘플 컬렉션으로 현재 화면을 교체할까요? 기존 데이터는 JSON으로 백업한 뒤 진행하는 것을 권장합니다.")) return;
+
+  const committed = commitCollectionChange(() => {
+    state.records = SAMPLE_RECORDS.map(record => normalizeRecord({ ...record, id: createId() }));
+    state.filter = "all";
+    state.genre = "all";
+    state.sort = "manual";
+    state.viewMode = "board";
+    state.columns = Math.max(4, Math.min(6, state.columns));
+  }, "저장 공간이 부족해 샘플 컬렉션을 불러오지 못했습니다.");
+
+  if (committed) setCatalogStatus("샘플 컬렉션 4장을 불러왔습니다. 필요하면 JSON으로 내보내거나 초기화할 수 있습니다.", "success");
+}
+
+function clearFilters() {
+  state.filter = "all";
+  state.genre = "all";
+  render();
+}
+
 function renderBoard(records) {
   els.board.style.setProperty("--columns", state.columns);
   els.board.dataset.viewMode = state.viewMode;
@@ -870,7 +977,7 @@ function renderBoard(records) {
     </article>
   `).join("");
 
-  els.emptyState.hidden = records.length > 0;
+  renderEmptyState(records);
 }
 
 function render() {
@@ -1602,6 +1709,8 @@ async function exportSharePng() {
 function bindEvents() {
   els.manualAddButton.addEventListener("click", () => openDialog());
   els.emptyAddButton.addEventListener("click", () => openDialog());
+  els.sampleCollectionButton.addEventListener("click", loadSampleCollection);
+  els.clearFiltersButton.addEventListener("click", clearFilters);
   els.closeDialogButton.addEventListener("click", closeDialog);
   els.cancelDialogButton.addEventListener("click", closeDialog);
   els.form.addEventListener("submit", saveRecord);

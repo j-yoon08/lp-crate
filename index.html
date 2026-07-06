@@ -3,8 +3,18 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="LP Crate는 검색, 가격·수량 추적, JSON 백업, SVG/PNG 공유 이미지를 지원하는 정적 브라우저 기반 LP 컬렉션 앱입니다.">
+    <meta name="theme-color" content="#f4f5f6" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#101114" media="(prefers-color-scheme: dark)">
+    <meta property="og:title" content="LP Crate">
+    <meta property="og:description" content="브라우저 localStorage로 LP 컬렉션을 정리하고 공유용 커버월 이미지를 내보내는 정적 앱입니다.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://j-yoon08.github.io/lp-crate/">
+    <meta property="og:image" content="https://j-yoon08.github.io/lp-crate/assets/record-placeholder.svg">
     <title>LP Crate</title>
-    <link rel="stylesheet" href="./styles.css?v=20260425-quantity-sort">
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="stylesheet" href="./styles.css?v=20260706-polish">
   </head>
   <body>
     <div class="app-shell">
@@ -132,9 +142,15 @@
 
         <section class="board-wrap" id="boardWrap" aria-label="LP 격자">
           <div class="collection-board" id="collectionBoard"></div>
-          <div class="empty-state" id="emptyState" hidden>
-            <h3>표시할 LP가 없습니다</h3>
-            <button type="button" id="emptyAddButton">LP 추가</button>
+          <div class="empty-state" id="emptyState" hidden aria-live="polite">
+            <p class="empty-kicker">Start your shelf</p>
+            <h3 id="emptyTitle">아직 컬렉션이 비어 있습니다</h3>
+            <p id="emptyCopy">MusicBrainz에서 검색하거나 직접 추가해서 LP 보유·위시 목록을 정리하세요.</p>
+            <div class="empty-actions">
+              <button class="primary-button" type="button" id="emptyAddButton">LP 추가</button>
+              <button type="button" id="sampleCollectionButton">샘플 컬렉션 보기</button>
+              <button type="button" id="clearFiltersButton" hidden>필터 초기화</button>
+            </div>
           </div>
         </section>
       </main>
@@ -252,6 +268,6 @@
       </form>
     </dialog>
 
-    <script src="./app.js?v=20260427-artist-year-sort" defer></script>
+    <script src="./app.js?v=20260706-polish" defer></script>
   </body>
 </html>
