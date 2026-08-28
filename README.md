@@ -1,45 +1,92 @@
 # LP Crate
 
-LP Crate is a static browser app for searching, checking, and organizing a vinyl record collection.
+A local-first web app for searching, organizing, and exporting a vinyl record collection.
 
-**Live demo:** https://j-yoon08.github.io/lp-crate/
+[Open the live demo](https://j-yoon08.github.io/lp-crate/)
 
-## What it does
+LP Crate keeps collection management lightweight: there is no account, backend, or database to operate. Album data is enriched through public music metadata services, while the collection itself stays in the browser.
 
-- Search album metadata through MusicBrainz and Cover Art Archive
-- Add records by search, drag-and-drop, or direct manual entry
-- Track ownership status, genre, condition, pressing, rating, price, and quantity
-- Show owned/wishlist counts and quantity-aware owned collection value
-- Filter by ownership status and genre
-- Sort by manual order, artist chronology, release year, rating, price, or quantity
-- Switch between a detailed board view and a compact cover-wall view
-- Load a built-in sample collection for first-run exploration
-- Export/import the collection as JSON
-- Export the visible board as SVG or a high-resolution square PNG cover wall
-- Toggle light/dark mode
+## Highlights
 
-## Privacy and storage
+- Search releases through MusicBrainz and Cover Art Archive
+- Add records from search results, drag and drop, or manual entry
+- Track ownership, genre, condition, pressing, rating, price, and quantity
+- Calculate an owned-only, quantity-aware collection value
+- Filter and sort by status, genre, artist chronology, year, rating, price, or quantity
+- Switch between a detailed board and compact cover-wall view
+- Export and restore the collection as JSON
+- Export the visible collection as SVG or a high-resolution square PNG
+- Preserve preferences and collection data between sessions
+- Use light or dark mode
 
-LP Crate has no backend and no server database. Collection data is stored in the user's browser with `localStorage`.
+## Technical approach
 
-Use **JSON export** before clearing browser data or moving the collection to another device.
+LP Crate is intentionally dependency-free and deploys as a static site.
 
-## Development
+| Area | Implementation |
+| --- | --- |
+| UI | Semantic HTML, CSS, and vanilla JavaScript |
+| Persistence | Browser `localStorage` with invalid-data recovery |
+| Metadata | MusicBrainz and Cover Art Archive HTTP APIs |
+| Export | Browser-native JSON, SVG, and Canvas APIs |
+| Deployment | GitHub Pages through GitHub Actions |
+| Validation | JavaScript syntax and static asset/UI smoke checks |
 
-This repository intentionally stays dependency-free. Open `index.html` directly in a browser, or serve the folder with any static file server.
+The design keeps hosting simple and makes the core collection usable without a server. The trade-off is that data does not automatically sync between browsers or devices.
 
-Run the built-in checks:
+## Privacy and data ownership
+
+Collection records are stored in the current browser. LP Crate does not send the collection to an application backend because no backend exists.
+
+Search terms are sent to MusicBrainz, and album artwork is requested from Cover Art Archive when those features are used. Their availability and privacy policies apply to those requests.
+
+Export a JSON backup before clearing browser data, switching browsers, or moving to another device.
+
+## Run locally
+
+Requirements:
+
+- A modern browser
+- Node.js only if you want to run the checks
+
+Clone the repository:
+
+```bash
+git clone https://github.com/j-yoon08/lp-crate.git
+cd lp-crate
+```
+
+Open `index.html` directly, or serve the directory with any static file server.
+
+Run the repository checks:
 
 ```bash
 npm run check
 ```
 
-The check validates JavaScript syntax, required UI hooks, referenced static assets, and the web app manifest.
+This validates JavaScript syntax, required UI hooks, referenced assets, and the web app manifest.
+
+## Project structure
+
+```text
+index.html               Application shell and dialogs
+styles.css               Responsive visual system and export styles
+app.js                   State, persistence, search, sorting, and export logic
+assets/                  Local sample artwork and fallback assets
+scripts/static-smoke.mjs Static repository checks
+.github/workflows/       GitHub Pages deployment
+```
 
 ## Deployment
 
-GitHub Actions deploys the repository root to GitHub Pages on every push to `main` after the static smoke check passes.
+Every push to `main` runs the static check and deploys the repository root to GitHub Pages.
+
+## Current limitations
+
+- Collection data is local to one browser profile unless exported and imported manually.
+- Search and remote cover loading depend on third-party service availability.
+- The project does not provide authentication, cloud sync, or multi-user sharing.
 
 ## License
 
-MIT
+[MIT](LICENSE)
